@@ -13,26 +13,47 @@ import {
 import { NeuroButton } from "@/components/ui/neuro-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Brain, Eye, EyeOff, ArrowLeft, Check, X } from "lucide-react"
+import { Brain, Eye, EyeOff, ArrowLeft, Check, X, AlertCircle } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
   })
+  const { login } = useAuth()
+  const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match!")
+      setError("Passwords don't match!")
       return
     }
-    // Handle registration logic here
-    console.log("Registration attempt:", formData)
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      // Simulate registration and auto-login
+      const result = await login(formData.email, formData.password)
+      if (result.success) {
+        router.push("/upload-cv")
+      } else {
+        setError(result.error || "Registration failed")
+      }
+    } catch (err) {
+      setError("An unexpected error occurred")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,10 +92,24 @@ export default function RegisterPage() {
             </div>
             <GlassCardTitle className="text-2xl">Create Account</GlassCardTitle>
             <GlassCardDescription>Start your AI career journey today</GlassCardDescription>
+            
+            {/* Test Mode Info */}
+            <div className="mt-4 p-3 glass-card border border-yellow-500/30 bg-yellow-500/10 rounded-lg">
+              <p className="text-sm text-yellow-500 font-medium mb-2">🧪 Test Mode Available</p>
+              <p className="text-xs text-yellow-500/80">
+                Use <strong>test@example.com</strong> / <strong>password123</strong> to test the complete flow
+              </p>
+            </div>
           </GlassCardHeader>
 
           <GlassCardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="flex items-center gap-2 p-3 glass-card border border-red-500/20 bg-red-500/10 rounded-lg">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <span className="text-sm text-red-500">{error}</span>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input
@@ -160,8 +195,8 @@ export default function RegisterPage() {
                 {passwordsDontMatch && <p className="text-sm text-red-500">Passwords don't match</p>}
               </div>
 
-              <NeuroButton type="submit" className="w-full" size="lg" disabled={passwordsDontMatch}>
-                Create Account
+              <NeuroButton type="submit" className="w-full" size="lg" disabled={passwordsDontMatch || isLoading}>
+                {isLoading ? "Creating Account..." : "Create Account"}
               </NeuroButton>
             </form>
 

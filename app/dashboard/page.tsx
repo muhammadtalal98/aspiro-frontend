@@ -22,8 +22,11 @@ import {
   Award,
   BookOpen,
   Code,
+  LogOut,
 } from "lucide-react"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
+import { ProtectedRoute } from "@/components/protected-route"
 
 const sidebarItems = [
   { icon: BarChart3, label: "Dashboard", href: "/dashboard", active: true },
@@ -85,6 +88,7 @@ const chatMessages = [
 export default function DashboardPage() {
   const [chatInput, setChatInput] = useState("")
   const [messages, setMessages] = useState(chatMessages)
+  const { user, logout, resetUserProgress } = useAuth()
 
   const handleSendMessage = () => {
     if (!chatInput.trim()) return
@@ -110,9 +114,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex">
-      {/* Sidebar */}
-      <div className="w-64 glass-card border-r border-white/10 flex-shrink-0">
+    <ProtectedRoute requireAuth={true} requireCV={true} requireOnboarding={true}>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex">
+        {/* Sidebar */}
+        <div className="w-64 glass-card border-r border-white/10 flex-shrink-0">
         <div className="p-6">
           <div className="flex items-center gap-2 mb-8">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
@@ -136,6 +141,15 @@ export default function DashboardPage() {
                 </div>
               </Link>
             ))}
+            
+            {/* Logout button */}
+            <button
+              onClick={logout}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth text-muted-foreground hover:text-foreground hover:bg-white/5 w-full mt-8"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Logout</span>
+            </button>
           </nav>
         </div>
       </div>
@@ -146,8 +160,27 @@ export default function DashboardPage() {
         <div className="flex-1 p-6 overflow-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-balance mb-2">Welcome back, Alex!</h1>
-            <p className="text-muted-foreground">Continue your AI career journey and track your progress.</p>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-3xl font-bold text-balance mb-2">Welcome back, {user?.name || "User"}!</h1>
+                <p className="text-muted-foreground">Continue your AI career journey and track your progress.</p>
+              </div>
+              {user?.email === "test@example.com" && (
+                <div className="flex gap-2">
+                  <div className="px-3 py-1 bg-yellow-500/20 text-yellow-500 text-sm rounded-full border border-yellow-500/30">
+                    Test Mode
+                  </div>
+                  <NeuroButton 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={resetUserProgress}
+                    className="text-xs"
+                  >
+                    Reset Progress
+                  </NeuroButton>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Stats Cards */}
@@ -382,5 +415,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }
