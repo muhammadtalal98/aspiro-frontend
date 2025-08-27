@@ -18,6 +18,10 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { LoadingSpinner } from "@/components/loading-spinner";
 
 const features = [
   {
@@ -82,6 +86,36 @@ const howItWorksSteps: TimelineItem[] = [
 ];
 
 export default function LandingPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      // Redirect authenticated users based on their progress
+      if (!user.hasUploadedCV) {
+        router.push("/upload-cv");
+      } else if (!user.hasCompletedOnboarding) {
+        router.push("/onboarding");
+      } else {
+        router.push("/dashboard");
+      }
+    }
+  }, [user, isLoading, router]);
+
+  // Show loading while checking auth status
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+        <LoadingSpinner size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  // Don't show landing page if user is authenticated
+  if (user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       {/* Hero Section */}

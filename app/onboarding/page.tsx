@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { ArrowRight, ArrowLeft, CheckCircle, User, Target, GraduationCap, Code, Briefcase } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
+import { ProtectedRoute } from "@/components/protected-route"
 
 interface OnboardingStep {
   id: string
@@ -97,6 +100,8 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState<Record<string, string | string[]>>({})
   const [isAnimating, setIsAnimating] = useState(false)
+  const { user, updateUser } = useAuth()
+  const router = useRouter()
 
   const progress = ((currentStep + 1) / onboardingSteps.length) * 100
 
@@ -112,6 +117,10 @@ export default function OnboardingPage() {
         setCurrentStep(currentStep + 1)
         setIsAnimating(false)
       }, 150)
+    } else if (currentStep === onboardingSteps.length - 2) {
+      // Complete onboarding
+      updateUser({ hasCompletedOnboarding: true })
+      router.push("/dashboard")
     }
   }
 
@@ -156,9 +165,10 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
-      {/* Progress bar */}
-      <div className="sticky top-0 z-10 p-4 glass-card border-b border-white/10">
+    <ProtectedRoute requireAuth={true} requireCV={true} requireOnboarding={true}>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
+        {/* Progress bar */}
+        <div className="sticky top-0 z-10 p-4 glass-card border-b border-white/10">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground">
@@ -186,6 +196,11 @@ export default function OnboardingPage() {
                 </div>
                 <h1 className="text-3xl md:text-4xl font-bold text-balance mb-4">{currentStepData.title}</h1>
                 <p className="text-lg text-muted-foreground text-pretty">{currentStepData.subtitle}</p>
+                {user?.email === "test@example.com" && (
+                  <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/20 text-yellow-500 text-sm rounded-full border border-yellow-500/30">
+                    🧪 Test Mode
+                  </div>
+                )}
               </div>
 
               {/* Step content */}
@@ -249,7 +264,7 @@ export default function OnboardingPage() {
                       </div>
                       <p className="text-muted-foreground">Analyzing your responses...</p>
                     </div>
-                    <NeuroButton size="lg" className="w-full md:w-auto">
+                    <NeuroButton size="lg" className="w-full md:w-auto" onClick={() => router.push("/dashboard")}>
                       Go to Dashboard
                     </NeuroButton>
                   </div>
@@ -280,5 +295,6 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   )
 }
