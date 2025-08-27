@@ -1,51 +1,65 @@
-"use client"
+"use client";
 import {
   GlassCard,
   GlassCardContent,
   GlassCardDescription,
   GlassCardHeader,
   GlassCardTitle,
-} from "@/components/ui/glass-card"
-import { NeuroButton } from "@/components/ui/neuro-button"
-import { Timeline, type TimelineItem } from "@/components/ui/timeline"
-import { ArrowRight, Brain, FileText, BarChart3, Settings, Sparkles, Zap } from "lucide-react"
-import Link from "next/link"
+} from "@/components/ui/glass-card";
+import { NeuroButton } from "@/components/ui/neuro-button";
+import { Timeline, type TimelineItem } from "@/components/ui/timeline";
+import {
+  ArrowRight,
+  Brain,
+  FileText,
+  BarChart3,
+  Settings,
+  Sparkles,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
 
 const features = [
   {
     icon: Brain,
     title: "AI Career Roadmap",
-    description: "Get personalized career paths powered by AI analysis of your skills, goals, and market trends.",
+    description:
+      "Get personalized career paths powered by AI analysis of your skills, goals, and market trends.",
   },
   {
     icon: FileText,
     title: "CV Upload & Analysis",
-    description: "Upload your resume for intelligent analysis and receive actionable feedback to improve your profile.",
+    description:
+      "Upload your resume for intelligent analysis and receive actionable feedback to improve your profile.",
   },
   {
     icon: BarChart3,
     title: "Progress Dashboard",
-    description: "Track your learning progress, skill development, and career milestones in one comprehensive view.",
+    description:
+      "Track your learning progress, skill development, and career milestones in one comprehensive view.",
   },
   {
     icon: Settings,
     title: "Admin Panel",
-    description: "Comprehensive management tools for courses, users, and platform analytics.",
+    description:
+      "Comprehensive management tools for courses, users, and platform analytics.",
   },
-]
+];
 
 const howItWorksSteps: TimelineItem[] = [
   {
     id: "1",
     title: "Complete Your Profile",
-    description: "Answer our intelligent questionnaire about your skills, experience, and career aspirations.",
+    description:
+      "Answer our intelligent questionnaire about your skills, experience, and career aspirations.",
     status: "completed",
     date: "Step 1",
   },
   {
     id: "2",
     title: "Upload Your CV",
-    description: "Our AI analyzes your resume to understand your current position and identify growth opportunities.",
+    description:
+      "Our AI analyzes your resume to understand your current position and identify growth opportunities.",
     status: "current",
     date: "Step 2",
   },
@@ -65,7 +79,7 @@ const howItWorksSteps: TimelineItem[] = [
     status: "upcoming",
     date: "Step 4",
   },
-]
+];
 
 export default function LandingPage() {
   return (
@@ -81,28 +95,38 @@ export default function LandingPage() {
           <div className="text-center">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full glass px-4 py-2 text-sm">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span className="text-foreground/80">Powered by Advanced AI Technology</span>
+              <span className="text-foreground/80">
+                Powered by Advanced AI Technology
+              </span>
             </div>
 
             <h1 className="mb-6 text-4xl font-bold tracking-tight text-balance sm:text-6xl lg:text-7xl">
               Navigate Your
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"> AI Career </span>
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                {" "}
+                AI Career{" "}
+              </span>
               Path
             </h1>
 
             <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground text-pretty sm:text-xl">
-              Discover your personalized AI career roadmap with expert guidance, skill assessments, and curated learning
-              paths. Transform your career with intelligent insights and actionable recommendations.
+              Discover your personalized AI career roadmap with expert guidance,
+              skill assessments, and curated learning paths. Transform your
+              career with intelligent insights and actionable recommendations.
             </p>
 
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-              <NeuroButton size="lg" className="group">
-                Get Started
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </NeuroButton>
-              <NeuroButton variant="glass" size="lg">
-                Login
-              </NeuroButton>
+              <Link href="/register">
+                <NeuroButton size="lg" className="group">
+                  Get Started
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </NeuroButton>
+              </Link>
+              <Link href="/login">
+                <NeuroButton variant="glass" size="lg">
+                  Login
+                </NeuroButton>
+              </Link>
             </div>
           </div>
         </div>
@@ -116,21 +140,29 @@ export default function LandingPage() {
               Powerful Features for Your Success
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground text-pretty">
-              Everything you need to accelerate your AI career journey, powered by cutting-edge technology.
+              Everything you need to accelerate your AI career journey, powered
+              by cutting-edge technology.
             </p>
           </div>
 
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((feature, index) => (
-              <GlassCard key={index} className="group hover:scale-105 transition-smooth neuro">
+              <GlassCard
+                key={index}
+                className="group hover:scale-105 transition-smooth neuro"
+              >
                 <GlassCardHeader className="text-center">
                   <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20 transition-smooth">
                     <feature.icon className="h-8 w-8 text-primary" />
                   </div>
-                  <GlassCardTitle className="text-xl">{feature.title}</GlassCardTitle>
+                  <GlassCardTitle className="text-xl">
+                    {feature.title}
+                  </GlassCardTitle>
                 </GlassCardHeader>
                 <GlassCardContent>
-                  <GlassCardDescription className="text-center">{feature.description}</GlassCardDescription>
+                  <GlassCardDescription className="text-center">
+                    {feature.description}
+                  </GlassCardDescription>
                 </GlassCardContent>
               </GlassCard>
             ))}
@@ -142,9 +174,12 @@ export default function LandingPage() {
       <section className="px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl mb-4">How It Works</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl mb-4">
+              How It Works
+            </h2>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground text-pretty">
-              Follow our simple 4-step process to unlock your AI career potential and achieve your professional goals.
+              Follow our simple 4-step process to unlock your AI career
+              potential and achieve your professional goals.
             </p>
           </div>
 
@@ -157,20 +192,26 @@ export default function LandingPage() {
         <div className="mx-auto max-w-4xl">
           <GlassCard variant="strong" className="text-center neuro">
             <GlassCardHeader>
-              <GlassCardTitle className="text-3xl sm:text-4xl mb-4">Ready to Transform Your Career?</GlassCardTitle>
+              <GlassCardTitle className="text-3xl sm:text-4xl mb-4">
+                Ready to Transform Your Career?
+              </GlassCardTitle>
               <GlassCardDescription className="text-lg">
-                Join thousands of professionals who have accelerated their AI careers with our platform.
+                Join thousands of professionals who have accelerated their AI
+                careers with our platform.
               </GlassCardDescription>
             </GlassCardHeader>
             <GlassCardContent>
               <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-                <NeuroButton size="lg" className="group">
-                  Start Your Journey
-                  <Zap className="ml-2 h-4 w-4" />
-                </NeuroButton>
-                <NeuroButton variant="outline" size="lg">
+                <Link href="/register">
+                  <NeuroButton size="lg" className="group">
+                    Start Your Journey
+                    <Zap className="ml-2 h-4 w-4" />
+                  </NeuroButton>
+                </Link>
+
+                {/* <NeuroButton variant="outline" size="lg">
                   Learn More
-                </NeuroButton>
+                </NeuroButton> */}
               </div>
             </GlassCardContent>
           </GlassCard>
@@ -189,7 +230,8 @@ export default function LandingPage() {
                 <span className="text-xl font-bold">AI Career Path</span>
               </div>
               <p className="text-muted-foreground text-pretty max-w-md">
-                Empowering professionals to navigate and excel in the rapidly evolving world of artificial intelligence.
+                Empowering professionals to navigate and excel in the rapidly
+                evolving world of artificial intelligence.
               </p>
             </div>
 
@@ -197,17 +239,26 @@ export default function LandingPage() {
               <h3 className="font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link href="/about" className="hover:text-foreground transition-smooth">
+                  <Link
+                    href="/about"
+                    className="hover:text-foreground transition-smooth"
+                  >
                     About
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact" className="hover:text-foreground transition-smooth">
+                  <Link
+                    href="/contact"
+                    className="hover:text-foreground transition-smooth"
+                  >
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link href="/careers" className="hover:text-foreground transition-smooth">
+                  <Link
+                    href="/careers"
+                    className="hover:text-foreground transition-smooth"
+                  >
                     Careers
                   </Link>
                 </li>
@@ -218,17 +269,26 @@ export default function LandingPage() {
               <h3 className="font-semibold mb-4">Legal</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link href="/privacy" className="hover:text-foreground transition-smooth">
+                  <Link
+                    href="/privacy"
+                    className="hover:text-foreground transition-smooth"
+                  >
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="hover:text-foreground transition-smooth">
+                  <Link
+                    href="/terms"
+                    className="hover:text-foreground transition-smooth"
+                  >
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/cookies" className="hover:text-foreground transition-smooth">
+                  <Link
+                    href="/cookies"
+                    className="hover:text-foreground transition-smooth"
+                  >
                     Cookie Policy
                   </Link>
                 </li>
@@ -242,5 +302,5 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }
