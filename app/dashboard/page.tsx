@@ -31,7 +31,6 @@ import { ProtectedRoute } from "@/components/protected-route"
 const sidebarItems = [
   { icon: BarChart3, label: "Dashboard", href: "/dashboard", active: true },
   { icon: Target, label: "Roadmap", href: "/dashboard/roadmap" },
-  { icon: Upload, label: "Upload CV", href: "/upload-cv" },
   { icon: User, label: "Profile", href: "/dashboard/profile" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ]
@@ -117,42 +116,44 @@ export default function DashboardPage() {
     <ProtectedRoute requireAuth={true} requireCV={true} requireOnboarding={true}>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex">
         {/* Sidebar */}
-        <div className="w-64 glass-card border-r border-white/10 flex-shrink-0">
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-8">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Brain className="h-5 w-5 text-primary-foreground" />
+        <div className="w-64 glass-card border-r border-white/10 flex-shrink-0 flex flex-col">
+          <div className="p-6 flex-1">
+            <div className="flex items-center gap-2 mb-8">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <Brain className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <span className="text-xl font-bold">AI Career Path</span>
             </div>
-            <span className="text-xl font-bold">AI Career Path</span>
-          </div>
 
-          <nav className="space-y-2">
-            {sidebarItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <div
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth ${
-                    item.active
-                      ? "bg-primary/20 text-primary border border-primary/30"
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.label}</span>
-                </div>
-              </Link>
-            ))}
-            
-            {/* Logout button */}
+            <nav className="space-y-2">
+              {sidebarItems.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <div
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth ${
+                      item.active
+                        ? "bg-primary/20 text-primary border border-primary/30"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    }`}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </div>
+                </Link>
+              ))}
+            </nav>
+          </div>
+          
+          {/* Logout button at bottom */}
+          <div className="p-6 border-t border-white/10">
             <button
               onClick={logout}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth text-muted-foreground hover:text-foreground hover:bg-white/5 w-full mt-8"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth text-muted-foreground hover:text-foreground hover:bg-white/5 w-full"
             >
               <LogOut className="h-5 w-5" />
               <span>Logout</span>
             </button>
-          </nav>
+          </div>
         </div>
-      </div>
 
       {/* Main Content */}
       <div className="flex-1 flex">

@@ -264,7 +264,14 @@ export default function OnboardingPage() {
                       </div>
                       <p className="text-muted-foreground">Analyzing your responses...</p>
                     </div>
-                    <NeuroButton size="lg" className="w-full md:w-auto" onClick={() => router.push("/dashboard")}>
+                    <NeuroButton 
+                      size="lg" 
+                      className="w-full md:w-auto" 
+                      onClick={() => {
+                        updateUser({ hasCompletedOnboarding: true })
+                        setTimeout(() => router.push("/dashboard"), 100)
+                      }}
+                    >
                       Go to Dashboard
                     </NeuroButton>
                   </div>

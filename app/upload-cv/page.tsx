@@ -5,7 +5,7 @@ import type React from "react"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card"
 import { NeuroButton } from "@/components/ui/neuro-button"
 import { Progress } from "@/components/ui/progress"
-import { Upload, FileText, CheckCircle, AlertCircle, X, Download, Eye, ArrowLeft, Sparkles, Brain } from "lucide-react"
+import { Upload, FileText, CheckCircle, AlertCircle, X, Sparkles, Brain } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
@@ -17,17 +17,12 @@ interface UploadedFile {
   preview?: string
   status: "uploading" | "success" | "error"
   progress: number
-  analysis?: {
-    skills: string[]
-    experience: string
-    recommendations: string[]
-  }
 }
 
 export default function CVUploadPage() {
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const { user, updateUser } = useAuth()
   const router = useRouter()
 
@@ -55,58 +50,19 @@ export default function CVUploadPage() {
   const simulateUpload = (file: File) => {
     const uploadFile: UploadedFile = {
       file,
-      status: "uploading",
-      progress: 0,
+      status: "success",
+      progress: 100,
     }
     setUploadedFile(uploadFile)
-
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadedFile((prev) => {
-        if (!prev) return null
-        const newProgress = prev.progress + Math.random() * 20
-        if (newProgress >= 100) {
-          clearInterval(interval)
-          return {
-            ...prev,
-            progress: 100,
-            status: "success",
-          }
-        }
-        return {
-          ...prev,
-          progress: newProgress,
-        }
-      })
-    }, 200)
   }
 
-  const simulateAnalysis = () => {
-    setIsAnalyzing(true)
+  const handleUploadOrAnalyze = () => {
+    setIsLoading(true)
+    // Simulate loading for 3 seconds
     setTimeout(() => {
-      setUploadedFile((prev) => {
-        if (!prev) return null
-        return {
-          ...prev,
-          analysis: {
-            skills: ["JavaScript", "React", "Node.js", "Python", "Machine Learning"],
-            experience: "3-5 years in software development",
-            recommendations: [
-              "Consider learning TypeScript for better code quality",
-              "Explore cloud platforms like AWS or Azure",
-              "Develop expertise in AI/ML frameworks like TensorFlow",
-              "Build a portfolio showcasing your projects",
-            ],
-          },
-        }
-      })
-      setIsAnalyzing(false)
+      updateUser({ hasUploadedCV: true })
+      router.push("/onboarding")
     }, 3000)
-  }
-
-  const handleContinueToOnboarding = () => {
-    updateUser({ hasUploadedCV: true })
-    router.push("/onboarding")
   }
 
   const handleFileSelect = (files: FileList | null) => {
@@ -149,7 +105,7 @@ export default function CVUploadPage() {
 
   const removeFile = () => {
     setUploadedFile(null)
-    setIsAnalyzing(false)
+    setIsLoading(false)
   }
 
   const formatFileSize = (bytes: number) => {
@@ -172,14 +128,6 @@ export default function CVUploadPage() {
         <div className="relative mx-auto max-w-4xl">
           {/* Header */}
           <div className="mb-8">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-smooth mb-6"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Link>
-
             <div className="text-center">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                 <Upload className="h-8 w-8 text-primary" />
@@ -197,9 +145,9 @@ export default function CVUploadPage() {
             </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-2">
-            {/* Upload Section */}
-            <div>
+          {/* Centered Upload Section */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-2xl">
               <GlassCard className="neuro">
                 <GlassCardHeader>
                   <GlassCardTitle>Upload Document</GlassCardTitle>
@@ -210,7 +158,7 @@ export default function CVUploadPage() {
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
-                      className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-smooth cursor-pointer hover:bg-white/5 ${
+                      className={`relative border-2 border-dashed rounded-lg p-12 md:p-16 text-center transition-smooth cursor-pointer hover:bg-white/5 ${
                         isDragOver ? "border-primary bg-primary/10" : "border-white/20"
                       }`}
                     >
@@ -220,74 +168,59 @@ export default function CVUploadPage() {
                         onChange={handleFileInput}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
-                      <div className="space-y-4">
-                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                          <Upload className="h-8 w-8 text-primary" />
+                      <div className="space-y-6">
+                        <div className="mx-auto flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-full bg-primary/10">
+                          <Upload className="h-10 w-10 md:h-12 md:w-12 text-primary" />
                         </div>
                         <div>
-                          <p className="text-lg font-medium">Drop your CV here, or click to browse</p>
-                          <p className="text-sm text-muted-foreground mt-2">Supports PDF, DOC, DOCX files up to 10MB</p>
+                          <p className="text-xl md:text-2xl font-medium">Drop your CV here, or click to browse</p>
+                          <p className="text-base md:text-lg text-muted-foreground mt-3">Supports PDF, DOC, DOCX files up to 10MB</p>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       {/* File info */}
-                      <div className="flex items-center gap-4 p-4 glass-card rounded-lg">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                          <FileText className="h-6 w-6 text-primary" />
+                      <div className="flex items-center gap-4 p-6 glass-card rounded-lg">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10">
+                          <FileText className="h-8 w-8 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{uploadedFile.file.name}</p>
-                          <p className="text-sm text-muted-foreground">{formatFileSize(uploadedFile.file.size)}</p>
+                          <p className="text-lg font-medium truncate">{uploadedFile.file.name}</p>
+                          <p className="text-base text-muted-foreground">{formatFileSize(uploadedFile.file.size)}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           {uploadedFile.status === "uploading" && (
-                            <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
+                            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
                           )}
-                          {uploadedFile.status === "success" && <CheckCircle className="h-5 w-5 text-green-500" />}
-                          {uploadedFile.status === "error" && <AlertCircle className="h-5 w-5 text-red-500" />}
-                          <button onClick={removeFile} className="p-1 hover:bg-white/10 rounded-full transition-smooth">
-                            <X className="h-4 w-4" />
+                          {uploadedFile.status === "success" && <CheckCircle className="h-6 w-6 text-green-500" />}
+                          {uploadedFile.status === "error" && <AlertCircle className="h-6 w-6 text-red-500" />}
+                          <button onClick={removeFile} className="p-2 hover:bg-white/10 rounded-full transition-smooth">
+                            <X className="h-5 w-5" />
                           </button>
                         </div>
                       </div>
 
-                      {/* Upload progress */}
-                      {uploadedFile.status === "uploading" && (
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>Uploading...</span>
-                            <span>{Math.round(uploadedFile.progress)}%</span>
-                          </div>
-                          <Progress value={uploadedFile.progress} />
-                        </div>
-                      )}
+
 
                       {/* Success actions */}
-                      {uploadedFile.status === "success" && !uploadedFile.analysis && !isAnalyzing && (
-                        <div className="flex gap-3">
-                          <NeuroButton onClick={simulateAnalysis} className="flex-1">
-                            <Brain className="h-4 w-4 mr-2" />
+                      {uploadedFile.status === "success" && !isLoading && (
+                        <div className="flex gap-4">
+                          <NeuroButton onClick={handleUploadOrAnalyze} className="flex-1 text-lg py-4">
+                            <Brain className="h-5 w-5 mr-3" />
                             Analyze CV
-                          </NeuroButton>
-                          <NeuroButton variant="outline">
-                            <Eye className="h-4 w-4" />
-                          </NeuroButton>
-                          <NeuroButton variant="outline">
-                            <Download className="h-4 w-4" />
                           </NeuroButton>
                         </div>
                       )}
 
-                      {/* Analysis in progress */}
-                      {isAnalyzing && (
-                        <div className="text-center space-y-4">
+                      {/* Loading state */}
+                      {isLoading && (
+                        <div className="text-center space-y-6 py-8">
                           <div className="animate-pulse">
-                            <Sparkles className="h-8 w-8 text-primary mx-auto mb-2" />
-                            <p className="font-medium">Analyzing your CV...</p>
-                            <p className="text-sm text-muted-foreground">
-                              Our AI is extracting skills, experience, and generating recommendations
+                            <Sparkles className="h-12 w-12 text-primary mx-auto mb-4" />
+                            <p className="text-xl font-medium">Processing your CV...</p>
+                            <p className="text-base text-muted-foreground mt-2">
+                              Our AI is analyzing your document and preparing insights
                             </p>
                           </div>
                         </div>
@@ -296,84 +229,6 @@ export default function CVUploadPage() {
                   )}
                 </GlassCardContent>
               </GlassCard>
-            </div>
-
-            {/* Analysis Results */}
-            <div>
-              {uploadedFile?.analysis && (
-                <div className="space-y-6">
-                  {/* Skills Detected */}
-                  <GlassCard className="neuro">
-                    <GlassCardHeader>
-                      <GlassCardTitle className="flex items-center gap-2">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        Skills Detected
-                      </GlassCardTitle>
-                    </GlassCardHeader>
-                    <GlassCardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {uploadedFile.analysis.skills.map((skill) => (
-                          <span key={skill} className="px-3 py-1 glass text-sm rounded-full border border-white/20">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </GlassCardContent>
-                  </GlassCard>
-
-                  {/* Experience Level */}
-                  <GlassCard className="neuro">
-                    <GlassCardHeader>
-                      <GlassCardTitle className="flex items-center gap-2">
-                        <Brain className="h-5 w-5 text-primary" />
-                        Experience Level
-                      </GlassCardTitle>
-                    </GlassCardHeader>
-                    <GlassCardContent>
-                      <p className="text-foreground">{uploadedFile.analysis.experience}</p>
-                    </GlassCardContent>
-                  </GlassCard>
-
-                  {/* Recommendations */}
-                  <GlassCard className="neuro">
-                    <GlassCardHeader>
-                      <GlassCardTitle className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-accent" />
-                        AI Recommendations
-                      </GlassCardTitle>
-                    </GlassCardHeader>
-                    <GlassCardContent>
-                      <ul className="space-y-3">
-                        {uploadedFile.analysis.recommendations.map((rec, index) => (
-                          <li key={index} className="flex items-start gap-3">
-                            <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                            <span className="text-sm text-pretty">{rec}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </GlassCardContent>
-                  </GlassCard>
-
-                  {/* Action buttons */}
-                  <div className="flex gap-3">
-                    <NeuroButton className="flex-1" onClick={handleContinueToOnboarding}>
-                      Continue to Onboarding
-                    </NeuroButton>
-                    <NeuroButton variant="outline">Save Analysis</NeuroButton>
-                  </div>
-                </div>
-              )}
-
-              {!uploadedFile && (
-                <GlassCard className="neuro">
-                  <GlassCardContent className="text-center py-12">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted/10">
-                      <Brain className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-muted-foreground">Upload your CV to see AI-powered analysis and recommendations</p>
-                  </GlassCardContent>
-                </GlassCard>
-              )}
             </div>
           </div>
         </div>
