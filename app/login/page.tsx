@@ -36,8 +36,8 @@ export default function LoginPage() {
     try {
       const result = await login(formData.email, formData.password)
       if (result.success) {
-        // Login successful, user will be redirected by ProtectedRoute
-        router.push("/upload-cv")
+        // Login successful, redirect to dashboard - ProtectedRoute will handle further routing
+        router.push("/dashboard")
       } else {
         setError(result.error || "Login failed")
       }
