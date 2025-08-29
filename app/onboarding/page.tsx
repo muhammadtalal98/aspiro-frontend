@@ -210,10 +210,47 @@ export default function OnboardingPage() {
                 isAnimating ? "opacity-0 transform translate-y-8" : "opacity-100 transform translate-y-0"
               }`}
             >
-              <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
-                <GlassCardContent className="p-12">
-                  {/* Step content */}
-                  <div className="space-y-8">
+              {currentStepData.type === "completion" ? (
+                // Completion step without card wrapper
+                <div className="space-y-8">
+                  {/* Question */}
+                  <div className="text-center">
+                    <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-4 tracking-wide">
+                      {currentStepData.title}
+                    </h1>
+                    {currentStepData.subtitle && (
+                      <p className="text-lg text-cyan-300/80 text-pretty max-w-lg mx-auto">
+                        {currentStepData.subtitle}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Completion content */}
+                  <div className="text-center space-y-8">
+                    {/* Glowing Circle with Text */}
+                    <div className="relative">
+                                                {/* Glowing Outline Circle */}
+                          <div className="w-80 h-80 mx-auto relative">
+                            {/* Glowing Outline Ring */}
+                            <div className="absolute inset-0 rounded-full border-2 border-cyan-400 shadow-lg shadow-cyan-400/50 animate-pulse"></div>
+                            
+                            {/* Text */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="text-center text-white">
+                                <div className="text-xl font-semibold mb-2">Analyzing your</div>
+                                <div className="text-xl font-semibold">profile with AI</div>
+                              </div>
+                            </div>
+                          </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Other steps with card wrapper
+                <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
+                  <GlassCardContent className="p-12">
+                    {/* Step content */}
+                    <div className="space-y-8">
                     {/* Question */}
                     <div className="text-center">
                       <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-4 tracking-wide">
@@ -284,41 +321,11 @@ export default function OnboardingPage() {
                       </div>
                     )}
 
-                    {currentStepData.type === "completion" && (
-                      <div className="text-center space-y-8">
-                        {/* Glowing Circle with Text */}
-                        <div className="relative">
-                          {/* Glowing Circle */}
-                          <div className="w-80 h-80 mx-auto relative">
-                            {/* Outer Glow Ring with Processing Animation */}
-                            <div className="absolute inset-0 rounded-full">
-                              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 animate-pulse opacity-60"></div>
-                              {/* Rotating Progress Ring */}
-                              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-cyan-400 border-r-blue-500 animate-spin" style={{ animationDuration: '2s' }}></div>
-                              {/* Processing Animation Dots */}
-                              <div className="absolute inset-0 rounded-full">
-                                <div className="absolute top-2 left-1/2 w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
-                                <div className="absolute bottom-2 left-1/2 w-3 h-3 bg-blue-400 rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
-                              </div>
-                            </div>
-                            
-                            {/* Inner Circle */}
-                            <div className="absolute inset-4 rounded-full bg-[#0e2439] flex items-center justify-center">
-                              {/* Text */}
-                              <div className="text-center text-white">
-                                <div className="text-xl font-semibold mb-2">Analyzing your</div>
-                                <div className="text-xl font-semibold">profile with AI</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
 
-                      </div>
-                    )}
                   </div>
                 </GlassCardContent>
               </GlassCard>
+              )}
             </div>
 
                         {/* Navigation */}
