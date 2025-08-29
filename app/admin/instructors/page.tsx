@@ -9,99 +9,110 @@ import {
   BookOpen,
   Settings,
   BarChart3,
+  Plus,
   Search,
+  Edit,
+  Trash2,
+  Eye,
   Filter,
   MoreHorizontal,
-  UserX,
-  RotateCcw,
-  Mail,
-  Shield,
   FileText,
   User,
   Square,
   ChevronDown,
+  GraduationCap,
+  Mail,
+  Phone,
 } from "lucide-react"
 import Link from "next/link"
 
 const adminSidebarItems = [
   { icon: Square, label: "Dashboard", href: "/admin", number: "1" },
   { icon: BookOpen, label: "Courses", href: "/admin/courses" },
-  { icon: Users, label: "Users", href: "/admin/users", active: true },
-  { icon: FileText, label: "Questionnaires", href: "/admin/questionnaires" },
-  { icon: BarChart3, label: "Reports", href: "/admin/reports" },
+  { icon: Users, label: "Majors", href: "/admin/majors" },
+  { icon: User, label: "Instructors", href: "/admin/instructors", active: true },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ]
 
-const usersData = [
+const instructorsData = [
   {
     id: 1,
-    name: "John Doe",
-    email: "john.doe@example.com",
-    role: "student",
+    name: "Dr. Sarah Johnson",
+    email: "sarah.johnson@university.edu",
+    phone: "+1 (555) 123-4567",
+    department: "Computer Science",
+    courses: 4,
+    students: 156,
     status: "active",
-    joinDate: "2024-01-15",
-    lastActive: "2 hours ago",
-    coursesEnrolled: 3,
-    coursesCompleted: 1,
+    specialization: "Artificial Intelligence",
+    joinDate: "2020-08-15",
+    lastActive: "2024-02-01",
   },
   {
     id: 2,
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    role: "instructor",
+    name: "Prof. Michael Chen",
+    email: "michael.chen@university.edu",
+    phone: "+1 (555) 234-5678",
+    department: "Mathematics",
+    courses: 3,
+    students: 98,
     status: "active",
-    joinDate: "2024-01-10",
-    lastActive: "1 day ago",
-    coursesEnrolled: 0,
-    coursesCompleted: 0,
+    specialization: "Applied Mathematics",
+    joinDate: "2019-01-10",
+    lastActive: "2024-01-28",
   },
   {
     id: 3,
-    name: "Mike Johnson",
-    email: "mike.johnson@example.com",
-    role: "student",
-    status: "inactive",
-    joinDate: "2024-02-01",
-    lastActive: "1 week ago",
-    coursesEnrolled: 2,
-    coursesCompleted: 0,
+    name: "Dr. Emily Rodriguez",
+    email: "emily.rodriguez@university.edu",
+    phone: "+1 (555) 345-6789",
+    department: "Biology",
+    courses: 5,
+    students: 203,
+    status: "active",
+    specialization: "Molecular Biology",
+    joinDate: "2021-03-20",
+    lastActive: "2024-02-01",
   },
   {
     id: 4,
-    name: "Sarah Wilson",
-    email: "sarah.wilson@example.com",
-    role: "admin",
-    status: "active",
-    joinDate: "2024-01-05",
-    lastActive: "30 minutes ago",
-    coursesEnrolled: 0,
-    coursesCompleted: 0,
+    name: "Prof. James Wilson",
+    email: "james.wilson@university.edu",
+    phone: "+1 (555) 456-7890",
+    department: "History",
+    courses: 2,
+    students: 87,
+    status: "inactive",
+    specialization: "World History",
+    joinDate: "2018-09-05",
+    lastActive: "2024-01-15",
   },
   {
     id: 5,
-    name: "David Brown",
-    email: "david.brown@example.com",
-    role: "student",
-    status: "suspended",
-    joinDate: "2024-01-20",
-    lastActive: "3 days ago",
-    coursesEnrolled: 1,
-    coursesCompleted: 1,
+    name: "Dr. Lisa Park",
+    email: "lisa.park@university.edu",
+    phone: "+1 (555) 567-8901",
+    department: "Business",
+    courses: 6,
+    students: 234,
+    status: "active",
+    specialization: "Business Management",
+    joinDate: "2022-01-15",
+    lastActive: "2024-01-30",
   },
 ]
 
-export default function UsersManagement() {
+export default function InstructorsManagement() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedRole, setSelectedRole] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
 
-  const filteredUsers = usersData.filter((user) => {
+  const filteredInstructors = instructorsData.filter((instructor) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = selectedRole === "all" || user.role === selectedRole
-    const matchesStatus = selectedStatus === "all" || user.status === selectedStatus
-    return matchesSearch && matchesRole && matchesStatus
+      instructor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      instructor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      instructor.department.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = selectedStatus === "all" || instructor.status === selectedStatus
+    return matchesSearch && matchesStatus
   })
 
   const getStatusColor = (status: string) => {
@@ -109,22 +120,7 @@ export default function UsersManagement() {
       case "active":
         return "bg-cyan-400 text-white"
       case "inactive":
-        return "bg-yellow-500 text-white"
-      case "suspended":
         return "bg-red-500 text-white"
-      default:
-        return "bg-gray-600 text-white"
-    }
-  }
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "admin":
-        return "bg-purple-600 text-white"
-      case "instructor":
-        return "bg-blue-600 text-white"
-      case "student":
-        return "bg-cyan-400 text-white"
       default:
         return "bg-gray-600 text-white"
     }
@@ -148,7 +144,7 @@ export default function UsersManagement() {
                 <div
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 ${
                     item.active
-                      ? "bg-cyan-400/20 text-cyan-100 border border-cyan-400/30"
+                      ? "bg-cyan-400/10 text-cyan-100 border-l-2 border-cyan-400"
                       : "text-white hover:text-cyan-100 hover:bg-cyan-400/10"
                   }`}
                 >
@@ -170,14 +166,15 @@ export default function UsersManagement() {
       {/* Main Content Area */}
       <div className="flex-1 p-6 overflow-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-white">Users</h1>
-            <div className="flex items-center gap-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-lg px-3 py-2">
-              <span className="text-white text-sm">Filter</span>
-              <ChevronDown className="h-4 w-4 text-white" />
-            </div>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-2">Instructors</h1>
+            <p className="text-cyan-300">Manage faculty members and teaching staff.</p>
           </div>
+          <NeuroButton className="flex items-center gap-2 bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30">
+            <Plus className="h-4 w-4" />
+            Add Instructor
+          </NeuroButton>
         </div>
 
         {/* Filters and Search */}
@@ -188,7 +185,7 @@ export default function UsersManagement() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-cyan-300" />
                   <Input
-                    placeholder="Search users by name or email..."
+                    placeholder="Search instructors..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 focus:border-cyan-400/60 text-white placeholder-cyan-300/50"
@@ -197,16 +194,6 @@ export default function UsersManagement() {
               </div>
               <div className="flex gap-2">
                 <select
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                  className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white"
-                >
-                  <option value="all">All Roles</option>
-                  <option value="student">Student</option>
-                  <option value="instructor">Instructor</option>
-                  <option value="admin">Admin</option>
-                </select>
-                <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
                   className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white"
@@ -214,7 +201,6 @@ export default function UsersManagement() {
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
-                  <option value="suspended">Suspended</option>
                 </select>
                 <NeuroButton variant="outline" size="sm" className="border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/10">
                   <Filter className="h-4 w-4" />
@@ -224,61 +210,68 @@ export default function UsersManagement() {
           </GlassCardContent>
         </GlassCard>
 
-        {/* Users Table */}
+        {/* Instructors Table */}
         <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20">
           <GlassCardHeader>
-            <GlassCardTitle className="text-white">Users ({filteredUsers.length})</GlassCardTitle>
+            <GlassCardTitle className="text-white">Instructors ({filteredInstructors.length})</GlassCardTitle>
           </GlassCardHeader>
           <GlassCardContent>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-cyan-400/20">
-                    <th className="text-left py-3 px-4 font-medium text-white">User</th>
-                    <th className="text-left py-3 px-4 font-medium text-white">Role</th>
-                    <th className="text-left py-3 px-4 font-medium text-white">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-white">Instructor</th>
+                    <th className="text-left py-3 px-4 font-medium text-white">Department</th>
                     <th className="text-left py-3 px-4 font-medium text-white">Courses</th>
+                    <th className="text-left py-3 px-4 font-medium text-white">Students</th>
+                    <th className="text-left py-3 px-4 font-medium text-white">Status</th>
                     <th className="text-left py-3 px-4 font-medium text-white">Last Active</th>
                     <th className="text-left py-3 px-4 font-medium text-white">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="border-b border-cyan-400/10 hover:bg-cyan-400/5 transition-all duration-300">
+                  {filteredInstructors.map((instructor) => (
+                    <tr key={instructor.id} className="border-b border-cyan-400/10 hover:bg-cyan-400/5 transition-all duration-300">
                       <td className="py-4 px-4">
                         <div>
-                          <p className="font-medium text-white">{user.name}</p>
-                          <p className="text-sm text-cyan-300">{user.email}</p>
+                          <p className="font-medium text-white">{instructor.name}</p>
+                          <p className="text-sm text-cyan-300">{instructor.email}</p>
+                          <p className="text-xs text-cyan-300">{instructor.specialization}</p>
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <Badge className={`${getRoleColor(user.role)} text-xs font-medium`}>{user.role}</Badge>
-                      </td>
-                      <td className="py-4 px-4">
-                        <Badge className={`${getStatusColor(user.status)} text-xs font-medium`}>{user.status}</Badge>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="text-sm">
-                          <p className="text-white">{user.coursesEnrolled} enrolled</p>
-                          <p className="text-cyan-300">{user.coursesCompleted} completed</p>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="text-sm text-cyan-300">{user.lastActive}</span>
+                        <span className="text-sm text-white">{instructor.department}</span>
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
-                          <NeuroButton variant="ghost" size="sm" title="Send Email" className="text-cyan-100 hover:bg-cyan-400/10">
+                          <BookOpen className="h-4 w-4 text-cyan-300" />
+                          <span className="text-sm text-white">{instructor.courses}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-cyan-300" />
+                          <span className="text-sm text-white">{instructor.students}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <Badge className={`${getStatusColor(instructor.status)} text-xs font-medium`}>
+                          {instructor.status}
+                        </Badge>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="text-sm text-cyan-300">{instructor.lastActive}</span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2">
+                          <NeuroButton variant="ghost" size="sm" className="text-cyan-100 hover:bg-cyan-400/10">
+                            <Eye className="h-4 w-4" />
+                          </NeuroButton>
+                          <NeuroButton variant="ghost" size="sm" className="text-cyan-100 hover:bg-cyan-400/10">
                             <Mail className="h-4 w-4" />
                           </NeuroButton>
-                          <NeuroButton variant="ghost" size="sm" title="Reset Password" className="text-cyan-100 hover:bg-cyan-400/10">
-                            <RotateCcw className="h-4 w-4" />
-                          </NeuroButton>
-                          <NeuroButton variant="ghost" size="sm" title="Change Role" className="text-cyan-100 hover:bg-cyan-400/10">
-                            <Shield className="h-4 w-4" />
-                          </NeuroButton>
-                          <NeuroButton variant="ghost" size="sm" title="Deactivate" className="text-cyan-100 hover:bg-cyan-400/10">
-                            <UserX className="h-4 w-4" />
+                          <NeuroButton variant="ghost" size="sm" className="text-cyan-100 hover:bg-cyan-400/10">
+                            <Edit className="h-4 w-4" />
                           </NeuroButton>
                           <NeuroButton variant="ghost" size="sm" className="text-cyan-100 hover:bg-cyan-400/10">
                             <MoreHorizontal className="h-4 w-4" />

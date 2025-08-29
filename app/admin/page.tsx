@@ -2,61 +2,73 @@
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card"
 import { NeuroButton } from "@/components/ui/neuro-button"
 import {
-  Brain,
   Users,
-  BookOpen,
-  Settings,
+  FileText,
   BarChart3,
-  TrendingUp,
-  UserCheck,
+  Settings,
+  ChevronDown,
+  Square,
+  BookOpen,
+  User,
   GraduationCap,
-  Activity,
-  AlertTriangle,
+  TrendingUp,
 } from "lucide-react"
 import Link from "next/link"
 
 const adminSidebarItems = [
-  { icon: BarChart3, label: "Dashboard", href: "/admin", active: true },
+  { icon: Square, label: "Dashboard", href: "/admin", active: true, number: "1" },
   { icon: BookOpen, label: "Courses", href: "/admin/courses" },
-  { icon: Users, label: "Users", href: "/admin/users" },
+  { icon: Users, label: "Majors", href: "/admin/majors" },
+  { icon: User, label: "Instructors", href: "/admin/instructors" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ]
 
-const recentActivity = [
-  { id: 1, action: "New user registered", user: "John Doe", time: "2 minutes ago", type: "user" },
-  { id: 2, action: "Course completed", user: "Jane Smith", time: "15 minutes ago", type: "course" },
-  { id: 3, action: "CV uploaded", user: "Mike Johnson", time: "1 hour ago", type: "upload" },
-  { id: 4, action: "Course created", user: "Admin", time: "2 hours ago", type: "course" },
-  { id: 5, action: "User deactivated", user: "Admin", time: "3 hours ago", type: "user" },
+const coursesData = [
+  { name: "Physics 101", enrollments: "2,304", priority: "HIGH" },
+  { name: "Algebra I", enrollments: "1,927", priority: "MEDIUM" },
+  { name: "Literature II", enrollments: "1,834", priority: "LOW" },
+  { name: "Economics", enrollments: "1,502", priority: "HIGH" },
+]
+
+const availableMajors = [
+  "Computer Science",
+  "Mathematics", 
+  "History",
+  "Biology",
+  "English",
+  "Business",
 ]
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex">
-      {/* Admin Sidebar */}
-      <div className="w-64 glass-card border-r border-white/10 flex-shrink-0">
+    <div className="min-h-screen bg-[#0e2439] flex">
+      {/* Left Sidebar */}
+      <div className="w-64 bg-[#0e2439]/80 backdrop-blur-xl border-r border-cyan-400/20 flex-shrink-0">
         <div className="p-6">
+          {/* Header */}
           <div className="flex items-center gap-2 mb-8">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Brain className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <span className="text-xl font-bold">Admin Panel</span>
-              <p className="text-xs text-muted-foreground">AI Career Path</p>
-            </div>
+            <User className="h-5 w-5 text-white" />
+            <span className="text-white font-semibold">DASHBOARD</span>
           </div>
 
+          {/* Navigation Items */}
           <nav className="space-y-2">
             {adminSidebarItems.map((item) => (
               <Link key={item.href} href={item.href}>
                 <div
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 ${
                     item.active
-                      ? "bg-primary/20 text-primary border border-primary/30"
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                      ? "bg-cyan-400/10 text-cyan-100 border-l-2 border-cyan-400"
+                      : "text-white hover:text-cyan-100 hover:bg-cyan-400/10"
                   }`}
                 >
-                  <item.icon className="h-5 w-5" />
+                  {item.number ? (
+                    <div className="h-5 w-5 rounded bg-cyan-400 flex items-center justify-center">
+                      <span className="text-xs font-bold text-white">{item.number}</span>
+                    </div>
+                  ) : (
+                    <item.icon className="h-5 w-5" />
+                  )}
                   <span>{item.label}</span>
                 </div>
               </Link>
@@ -65,198 +77,128 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Main Admin Content */}
+      {/* Main Content Area */}
       <div className="flex-1 p-6 overflow-auto">
-        {/* Header */}
+        {/* Top Section - Control Panel Header and Key Metrics */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-balance mb-2">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage users, courses, and platform settings.</p>
-        </div>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold text-white">Control</h1>
+            <div className="flex items-center gap-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-lg px-3 py-2">
+              <span className="text-white text-sm">Control</span>
+              <ChevronDown className="h-4 w-4 text-white" />
+            </div>
+          </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-6 md:grid-cols-4 mb-8">
-          <GlassCard className="neuro">
-            <GlassCardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Users</p>
-                  <p className="text-2xl font-bold">1,247</p>
-                  <p className="text-xs text-green-500">+12% from last month</p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-              </div>
-            </GlassCardContent>
-          </GlassCard>
+          {/* Metric Cards */}
+          <div className="grid gap-6 md:grid-cols-4 mb-8">
+            <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20">
+              <GlassCardContent className="p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">120</div>
+                <div className="text-white text-sm">Courses</div>
+              </GlassCardContent>
+            </GlassCard>
 
-          <GlassCard className="neuro">
-            <GlassCardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Courses</p>
-                  <p className="text-2xl font-bold">34</p>
-                  <p className="text-xs text-green-500">+3 new this week</p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center">
-                  <BookOpen className="h-6 w-6 text-accent" />
-                </div>
-              </div>
-            </GlassCardContent>
-          </GlassCard>
+            <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20">
+              <GlassCardContent className="p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">15.2k</div>
+                <div className="text-white text-sm">Enrollments</div>
+              </GlassCardContent>
+            </GlassCard>
 
-          <GlassCard className="neuro">
-            <GlassCardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Completions</p>
-                  <p className="text-2xl font-bold">892</p>
-                  <p className="text-xs text-green-500">+18% completion rate</p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <GraduationCap className="h-6 w-6 text-green-500" />
-                </div>
-              </div>
-            </GlassCardContent>
-          </GlassCard>
+            <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20">
+              <GlassCardContent className="p-6 text-center">
+                <div className="text-3xl font-bold text-white mb-2">54</div>
+                <div className="text-white text-sm">Instructors</div>
+              </GlassCardContent>
+            </GlassCard>
 
-          <GlassCard className="neuro">
-            <GlassCardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Revenue</p>
-                  <p className="text-2xl font-bold">$24.5K</p>
-                  <p className="text-xs text-green-500">+8% this month</p>
+            <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20">
+              <GlassCardContent className="p-6 text-center">
+                <div className="relative w-16 h-16 mx-auto mb-2">
+                  <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
+                    <path
+                      className="text-cyan-400/20"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                    <path
+                      className="text-cyan-400"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeDasharray="78, 100"
+                      strokeLinecap="round"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-lg font-bold text-white">78%</span>
+                  </div>
                 </div>
-                <div className="h-12 w-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-yellow-500" />
-                </div>
-              </div>
-            </GlassCardContent>
-          </GlassCard>
+                <div className="text-white text-sm">Completion Rate</div>
+              </GlassCardContent>
+            </GlassCard>
+          </div>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-2">
-          {/* Quick Actions */}
-          <GlassCard className="neuro">
+          {/* Middle Section - Courses Table */}
+          <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20">
             <GlassCardHeader>
-              <GlassCardTitle>Quick Actions</GlassCardTitle>
+              <GlassCardTitle className="text-white">Courses</GlassCardTitle>
             </GlassCardHeader>
             <GlassCardContent>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Link href="/admin/courses">
-                  <NeuroButton variant="outline" className="w-full justify-start h-auto p-4">
-                    <div className="flex flex-col items-start gap-1">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4" />
-                        <span className="font-medium">Manage Courses</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">Add, edit, or remove courses</span>
-                    </div>
-                  </NeuroButton>
-                </Link>
-
-                <Link href="/admin/users">
-                  <NeuroButton variant="outline" className="w-full justify-start h-auto p-4">
-                    <div className="flex flex-col items-start gap-1">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        <span className="font-medium">Manage Users</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">View and manage user accounts</span>
-                    </div>
-                  </NeuroButton>
-                </Link>
-
-                <NeuroButton variant="outline" className="w-full justify-start h-auto p-4">
-                  <div className="flex flex-col items-start gap-1">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4" />
-                      <span className="font-medium">View Analytics</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">Platform usage statistics</span>
-                  </div>
-                </NeuroButton>
-
-                <NeuroButton variant="outline" className="w-full justify-start h-auto p-4">
-                  <div className="flex flex-col items-start gap-1">
-                    <div className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      <span className="font-medium">System Settings</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">Configure platform settings</span>
-                  </div>
-                </NeuroButton>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-cyan-400/20">
+                      <th className="text-left py-3 text-white font-medium">COURSE</th>
+                      <th className="text-left py-3 text-white font-medium">ENROLLMENTS</th>
+                      <th className="text-left py-3 text-white font-medium">PRIORITY</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {coursesData.map((course, index) => (
+                      <tr key={index} className="border-b border-cyan-400/10 hover:bg-cyan-400/5">
+                        <td className="py-3 text-white">{course.name}</td>
+                        <td className="py-3 text-white">{course.enrollments}</td>
+                        <td className="py-3">
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${
+                              course.priority === "HIGH"
+                                ? "bg-cyan-400 text-white"
+                                : course.priority === "MEDIUM"
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-600 text-white"
+                            }`}
+                          >
+                            {course.priority}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </GlassCardContent>
           </GlassCard>
 
-          {/* Recent Activity */}
-          <GlassCard className="neuro">
+          {/* Right Section - Available Majors List */}
+          <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20">
             <GlassCardHeader>
-              <GlassCardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Recent Activity
-              </GlassCardTitle>
+              <GlassCardTitle className="text-white">Available Majors</GlassCardTitle>
             </GlassCardHeader>
             <GlassCardContent>
-              <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-center gap-3 p-3 glass rounded-lg">
-                    <div
-                      className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                        activity.type === "user" && "bg-primary/10"
-                      } ${activity.type === "course" && "bg-accent/10"} ${activity.type === "upload" && "bg-green-500/10"}`}
-                    >
-                      {activity.type === "user" && <UserCheck className="h-4 w-4 text-primary" />}
-                      {activity.type === "course" && <BookOpen className="h-4 w-4 text-accent" />}
-                      {activity.type === "upload" && <TrendingUp className="h-4 w-4 text-green-500" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{activity.action}</p>
-                      <p className="text-xs text-muted-foreground">by {activity.user}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{activity.time}</span>
-                  </div>
+              <ul className="space-y-3">
+                {availableMajors.map((major, index) => (
+                  <li key={index} className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+                    <span className="text-white">{major}</span>
+                  </li>
                 ))}
-              </div>
-            </GlassCardContent>
-          </GlassCard>
-        </div>
-
-        {/* System Status */}
-        <div className="mt-8">
-          <GlassCard className="neuro">
-            <GlassCardHeader>
-              <GlassCardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                System Status
-              </GlassCardTitle>
-            </GlassCardHeader>
-            <GlassCardContent>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-3 w-3 rounded-full bg-green-500" />
-                  <div>
-                    <p className="text-sm font-medium">API Status</p>
-                    <p className="text-xs text-muted-foreground">All systems operational</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-3 w-3 rounded-full bg-green-500" />
-                  <div>
-                    <p className="text-sm font-medium">Database</p>
-                    <p className="text-xs text-muted-foreground">Connected and healthy</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-3 w-3 rounded-full bg-yellow-500" />
-                  <div>
-                    <p className="text-sm font-medium">AI Services</p>
-                    <p className="text-xs text-muted-foreground">Minor delays detected</p>
-                  </div>
-                </div>
-              </div>
+              </ul>
             </GlassCardContent>
           </GlassCard>
         </div>

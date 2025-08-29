@@ -159,13 +159,13 @@ export default function CVUploadPage() {
         <div className="relative mx-auto max-w-2xl">
           {/* Header */}
           <div className="mb-8">
-            <Link
+            {/* <Link
               href="/dashboard"
               className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-100 transition-all duration-300 mb-6 group"
             >
               <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform duration-300" />
               Back to Dashboard
-            </Link>
+            </Link> */}
 
             <div className="text-center">
               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 shadow-lg shadow-cyan-500/20">
@@ -184,21 +184,20 @@ export default function CVUploadPage() {
           </div>
 
           {/* Main Card */}
-          <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
-            <GlassCardContent className="p-8 space-y-8">
+          <div className="bg-[#0e2439]/80 backdrop-blur-xl rounded-xl p-8 space-y-8 border border-cyan-400/20 shadow-2xl shadow-cyan-500/10">
               {/* CV Upload Section */}
               <div>
-                <h2 className="text-2xl font-bold text-cyan-100 mb-6 text-center">Upload Your CV</h2>
+                <h2 className="text-2xl font-bold text-cyan-100 mb-6 text-center">Upload CV</h2>
                 
                 {!uploadedFile ? (
                   <div
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
-                    className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 cursor-pointer hover:bg-cyan-400/5 ${
+                    className={`relative border-2 border-solid rounded-xl p-12 text-center transition-all duration-300 cursor-pointer bg-[#0e2439]/50 backdrop-blur-sm ${
                       isDragOver 
-                        ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
-                        : "border-cyan-400/50 hover:border-cyan-400"
+                        ? "border-cyan-400 shadow-lg shadow-cyan-400/40" 
+                        : "border-cyan-400 shadow-lg shadow-cyan-400/30"
                     }`}
                   >
                     <input
@@ -208,20 +207,19 @@ export default function CVUploadPage() {
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
                     <div className="space-y-6">
-                      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30">
-                        <Upload className="h-10 w-10 text-cyan-400" />
+                      <div className="mx-auto flex h-16 w-16 items-center justify-center">
+                        <Upload className="h-8 w-8 text-white" />
                       </div>
                       <div>
-                        <p className="text-xl font-medium text-cyan-100 mb-2">Drag and drop your CV here</p>
-                        <p className="text-cyan-300/80">or click to browse</p>
-                        <p className="text-sm text-cyan-300/60 mt-2">Supports PDF, DOC, DOCX files up to 10MB</p>
+                        <p className="text-xl font-medium text-white mb-2">Drag and drop your CV here</p>
+                        <p className="text-white">or click to browse</p>
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     {/* File info */}
-                    <div className="flex items-center gap-4 p-6 glass-card rounded-xl border border-cyan-400/20 bg-[#0e2439]/50">
+                    <div className="flex items-center gap-4 p-6 glass-card rounded-xl border border-cyan-400/20 bg-[#0e2439]/50 backdrop-blur-sm">
                       <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30">
                         <FileText className="h-8 w-8 text-cyan-400" />
                       </div>
@@ -251,7 +249,7 @@ export default function CVUploadPage() {
                       name="fullName"
                       value={userInfo.fullName}
                       onChange={handleInputChange}
-                      className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
+                      className="border border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 backdrop-blur-sm text-white placeholder-cyan-300/50 transition-all duration-300 h-12 rounded-lg px-4"
                       placeholder="Enter your full name"
                       required
                     />
@@ -263,7 +261,7 @@ export default function CVUploadPage() {
                       type="email"
                       value={userInfo.email}
                       onChange={handleInputChange}
-                      className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
+                      className="border border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 backdrop-blur-sm text-white placeholder-cyan-300/50 transition-all duration-300 h-12 rounded-lg px-4"
                       placeholder="Enter your email"
                       required
                     />
@@ -274,7 +272,7 @@ export default function CVUploadPage() {
                       name="phoneNumber"
                       value={userInfo.phoneNumber}
                       onChange={handleInputChange}
-                      className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
+                      className="border border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 backdrop-blur-sm text-white placeholder-cyan-300/50 transition-all duration-300 h-12 rounded-lg px-4"
                       placeholder="Enter your phone number"
                     />
                   </div>
@@ -284,7 +282,7 @@ export default function CVUploadPage() {
                       name="address"
                       value={userInfo.address}
                       onChange={handleInputChange}
-                      className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
+                      className="border border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 backdrop-blur-sm text-white placeholder-cyan-300/50 transition-all duration-300 h-12 rounded-lg px-4"
                       placeholder="Enter your address"
                     />
                   </div>
@@ -293,16 +291,15 @@ export default function CVUploadPage() {
 
               {/* Submit Button */}
               <div className="text-center pt-4">
-                <NeuroButton 
-                  className="h-12 px-8 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold tracking-wide shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
+                <button 
+                  className="h-12 px-8 bg-[#0e2439]/80 backdrop-blur-sm border border-cyan-400/30 text-white font-semibold tracking-wide transition-all duration-300 rounded-lg disabled:opacity-50 disabled:transform-none"
                   disabled={!isFormValid || isLoading}
                   onClick={handleSubmit}
                 >
-                  {isLoading ? "Processing..." : "Submit & Continue"}
-                </NeuroButton>
+                  {isLoading ? "Processing..." : "Submit"}
+                </button>
               </div>
-            </GlassCardContent>
-          </GlassCard>
+            </div>
         </div>
       </div>
     </ProtectedRoute>
