@@ -56,50 +56,56 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-accent/20 blur-3xl" />
+    <div className="min-h-screen bg-[#0e2439] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background particles */}
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-cyan-400 rounded-full animate-pulse opacity-60"></div>
+        <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-blue-400 rounded-full animate-pulse opacity-40"></div>
+        <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-cyan-300 rounded-full animate-pulse opacity-50"></div>
+        <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-blue-300 rounded-full animate-pulse opacity-30"></div>
+        <div className="absolute bottom-1/3 left-1/4 w-1 h-1 bg-cyan-500 rounded-full animate-pulse opacity-70"></div>
       </div>
 
       <div className="relative w-full max-w-md">
         {/* Back to home link */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-smooth mb-8"
+          className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-100 transition-all duration-300 mb-8 group"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform duration-300" />
           Back to Home
         </Link>
 
-        <GlassCard className="neuro">
-          <GlassCardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Brain className="h-6 w-6 text-primary" />
+        <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
+          <GlassCardHeader className="text-center pb-8">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 shadow-lg shadow-cyan-500/20">
+              <Brain className="h-8 w-8 text-cyan-400" />
             </div>
-            <GlassCardTitle className="text-2xl">Welcome Back</GlassCardTitle>
-            <GlassCardDescription>Sign in to your AI Career Path account</GlassCardDescription>
+            <GlassCardTitle className="text-3xl font-bold text-cyan-100 tracking-wide">LOGIN</GlassCardTitle>
+            <GlassCardDescription className="text-cyan-300/80 mt-2">
+              Sign in to your AI Career Path account
+            </GlassCardDescription>
             
             {/* Test Mode Info */}
-            <div className="mt-4 p-3 glass-card border border-yellow-500/30 bg-yellow-500/10 rounded-lg">
-              <p className="text-sm text-yellow-500 font-medium mb-2">🧪 Test Mode Available</p>
-              <p className="text-xs text-yellow-500/80">
+            <div className="mt-6 p-4 glass-card border border-yellow-400/30 bg-yellow-400/10 rounded-xl backdrop-blur-sm">
+              <p className="text-sm text-yellow-300 font-medium mb-2">🧪 Test Mode Available</p>
+              <p className="text-xs text-yellow-300/80">
                 Use <strong>test@example.com</strong> / <strong>password123</strong> to test the complete flow
               </p>
             </div>
           </GlassCardHeader>
 
-          <GlassCardContent>
+          <GlassCardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="flex items-center gap-2 p-3 glass-card border border-red-500/20 bg-red-500/10 rounded-lg">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <span className="text-sm text-red-500">{error}</span>
+                <div className="flex items-center gap-3 p-4 glass-card border border-red-400/30 bg-red-400/10 rounded-xl backdrop-blur-sm">
+                  <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+                  <span className="text-sm text-red-300">{error}</span>
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+              
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-cyan-100 font-medium">Username</Label>
                 <Input
                   id="email"
                   name="email"
@@ -108,12 +114,12 @@ export default function LoginPage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="glass-card border-white/20 focus:border-primary/50 transition-smooth"
+                  className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-cyan-100 font-medium">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -123,33 +129,41 @@ export default function LoginPage() {
                     value={formData.password}
                     onChange={handleInputChange}
                     required
-                    className="glass-card border-white/20 focus:border-primary/50 transition-smooth pr-10"
+                    className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12 pr-12"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-smooth"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-300 hover:text-cyan-100 transition-colors duration-300"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
 
               <div className="flex items-center justify-between">
-                <Link href="/forgot-password" className="text-sm text-primary hover:text-primary/80 transition-smooth">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" className="w-4 h-4 text-cyan-400 bg-[#0e2439]/50 border-cyan-400/30 rounded focus:ring-cyan-400/20" />
+                  <span className="text-sm text-cyan-300">Remember me</span>
+                </label>
+                <Link href="/forgot-password" className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors duration-300">
                   Forgot password?
                 </Link>
               </div>
 
-              <NeuroButton type="submit" className="w-full" size="lg" disabled={isLoading}>
-                {isLoading ? "Signing In..." : "Sign In"}
+              <NeuroButton 
+                type="submit" 
+                className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold tracking-wide shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105" 
+                disabled={isLoading}
+              >
+                {isLoading ? "Signing In..." : "LOG IN"}
               </NeuroButton>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
+            <div className="text-center pt-4 border-t border-cyan-400/20">
+              <p className="text-sm text-cyan-300/80">
                 Don't have an account?{" "}
-                <Link href="/register" className="text-primary hover:text-primary/80 transition-smooth font-medium">
+                <Link href="/register" className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 font-medium">
                   Sign up
                 </Link>
               </p>

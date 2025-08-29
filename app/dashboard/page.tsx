@@ -1,4 +1,5 @@
 "use client"
+
 import { useState } from "react"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card"
 import { NeuroButton } from "@/components/ui/neuro-button"
@@ -8,20 +9,12 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Brain,
   User,
-  Upload,
   Settings,
   BarChart3,
   Target,
-  Calendar,
   TrendingUp,
   Send,
-  Plus,
-  Edit,
-  RefreshCw,
-  Sparkles,
   Award,
-  BookOpen,
-  Code,
   LogOut,
 } from "lucide-react"
 import Link from "next/link"
@@ -114,25 +107,25 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute requireAuth={true} requireCV={true} requireOnboarding={true}>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex">
+      <div className="min-h-screen bg-[#0e2439] flex">
         {/* Sidebar */}
-        <div className="w-64 glass-card border-r border-white/10 flex-shrink-0 flex flex-col">
+        <div className="w-64 glass-card border-r border-cyan-400/20 flex-shrink-0 flex flex-col bg-[#0e2439]/80 backdrop-blur-xl">
           <div className="p-6 flex-1">
             <div className="flex items-center gap-2 mb-8">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <Brain className="h-5 w-5 text-primary-foreground" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500">
+                <Brain className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold">AI Career Path</span>
+              <span className="text-xl font-bold text-cyan-100">AI Career Path</span>
             </div>
 
             <nav className="space-y-2">
               {sidebarItems.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <div
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth ${
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 ${
                       item.active
-                        ? "bg-primary/20 text-primary border border-primary/30"
-                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                        ? "bg-cyan-400/20 text-cyan-100 border border-cyan-400/30 shadow-lg shadow-cyan-400/20"
+                        : "text-cyan-300/80 hover:text-cyan-100 hover:bg-cyan-400/10"
                     }`}
                   >
                     <item.icon className="h-5 w-5" />
@@ -144,10 +137,10 @@ export default function DashboardPage() {
           </div>
           
           {/* Logout button at bottom */}
-          <div className="p-6 border-t border-white/10">
+          <div className="p-6 border-t border-cyan-400/20">
             <button
               onClick={logout}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg transition-smooth text-muted-foreground hover:text-foreground hover:bg-white/5 w-full"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300 text-cyan-300/80 hover:text-cyan-100 hover:bg-cyan-400/10 w-full"
             >
               <LogOut className="h-5 w-5" />
               <span>Logout</span>
@@ -155,267 +148,160 @@ export default function DashboardPage() {
           </div>
         </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex">
-        {/* Dashboard Content */}
-        <div className="flex-1 p-6 overflow-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-3xl font-bold text-balance mb-2">Welcome back, {user?.name || "User"}!</h1>
-                <p className="text-muted-foreground">Continue your AI career journey and track your progress.</p>
-              </div>
-              {user?.email === "test@example.com" && (
-                <div className="flex gap-2">
-                  <div className="px-3 py-1 bg-yellow-500/20 text-yellow-500 text-sm rounded-full border border-yellow-500/30">
-                    Test Mode
-                  </div>
-                  <NeuroButton 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={resetUserProgress}
-                    className="text-xs"
-                  >
-                    Reset Progress
-                  </NeuroButton>
+        {/* Main Content */}
+        <div className="flex-1 flex">
+          {/* Dashboard Content */}
+          <div className="flex-1 p-6 overflow-auto">
+            {/* Header */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-2">Welcome back, {user?.name || "User"}!</h1>
+                  <p className="text-cyan-300/80">Continue your AI career journey and track your progress.</p>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid gap-6 md:grid-cols-3 mb-8">
-            <GlassCard className="neuro">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Progress</p>
-                    <p className="text-2xl font-bold">40%</p>
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-primary" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-
-            <GlassCard className="neuro">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Skills Learned</p>
-                    <p className="text-2xl font-bold">12</p>
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center">
-                    <Code className="h-6 w-6 text-accent" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-
-            <GlassCard className="neuro">
-              <GlassCardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Certificates</p>
-                    <p className="text-2xl font-bold">3</p>
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <Award className="h-6 w-6 text-green-500" />
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </div>
-
-          {/* Career Roadmap */}
-          <GlassCard className="neuro mb-8">
-            <GlassCardHeader>
-              <div className="flex items-center justify-between">
-                <GlassCardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-primary" />
-                  Your AI Career Roadmap
-                </GlassCardTitle>
-                <div className="flex gap-2">
-                  <NeuroButton variant="outline" size="sm">
-                    <Plus className="h-4 w-4" />
-                  </NeuroButton>
-                  <NeuroButton variant="outline" size="sm">
-                    <RefreshCw className="h-4 w-4" />
-                  </NeuroButton>
-                </div>
-              </div>
-            </GlassCardHeader>
-            <GlassCardContent>
-              <div className="space-y-6">
-                {roadmapSteps.map((step, index) => (
-                  <div key={step.id} className="relative">
-                    <div className="flex items-start gap-4">
-                      {/* Timeline dot */}
-                      <div className="relative z-10 flex h-10 w-10 items-center justify-center">
-                        <div
-                          className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition-smooth ${
-                            step.status === "completed" && "border-primary bg-primary text-primary-foreground"
-                          } ${step.status === "current" && "border-primary bg-background text-primary animate-pulse"} ${
-                            step.status === "upcoming" && "border-muted-foreground bg-background text-muted-foreground"
-                          }`}
-                        >
-                          {step.status === "completed" && <span className="text-xs font-bold">✓</span>}
-                          {step.status === "current" && <span className="text-xs font-bold">{index + 1}</span>}
-                          {step.status === "upcoming" && <span className="text-xs font-bold">{index + 1}</span>}
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div
-                          className={`glass-card rounded-lg p-4 transition-smooth hover:bg-white/10 ${
-                            step.status === "current" && "ring-2 ring-primary/50"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <h3
-                              className={`font-semibold text-balance ${
-                                step.status === "completed" && "text-foreground"
-                              } ${step.status === "current" && "text-primary"} ${
-                                step.status === "upcoming" && "text-muted-foreground"
-                              }`}
-                            >
-                              {step.title}
-                            </h3>
-                            <div className="flex gap-1">
-                              <NeuroButton variant="ghost" size="sm">
-                                <Edit className="h-3 w-3" />
-                              </NeuroButton>
-                              <NeuroButton variant="ghost" size="sm">
-                                <RefreshCw className="h-3 w-3" />
-                              </NeuroButton>
-                            </div>
-                          </div>
-                          <p className="text-sm text-muted-foreground text-pretty mb-2">{step.description}</p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">{step.date}</span>
-                            {step.status === "current" && (
-                              <NeuroButton size="sm">
-                                <BookOpen className="h-3 w-3 mr-1" />
-                                Continue
-                              </NeuroButton>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                {user?.email === "test@example.com" && (
+                  <div className="flex gap-2">
+                    <div className="px-3 py-1 bg-yellow-400/20 text-yellow-300 text-sm rounded-full border border-yellow-400/30">
+                      Test Mode
                     </div>
-
-                    {/* Timeline line */}
-                    {index < roadmapSteps.length - 1 && (
-                      <div className="absolute left-5 top-10 h-6 w-0.5 bg-gradient-to-b from-primary/50 to-muted-foreground/20" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </GlassCardContent>
-          </GlassCard>
-
-          {/* Quick Actions */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <GlassCard className="neuro">
-              <GlassCardHeader>
-                <GlassCardTitle className="text-lg">Quick Actions</GlassCardTitle>
-              </GlassCardHeader>
-              <GlassCardContent>
-                <div className="space-y-3">
-                  <Link href="/upload-cv">
-                    <NeuroButton variant="outline" className="w-full justify-start">
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload New CV
+                    <NeuroButton 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={resetUserProgress}
+                      className="text-xs border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10"
+                    >
+                      Reset Progress
                     </NeuroButton>
-                  </Link>
-                  <NeuroButton variant="outline" className="w-full justify-start">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Schedule Learning Session
-                  </NeuroButton>
-                  <NeuroButton variant="outline" className="w-full justify-start">
-                    <Target className="h-4 w-4 mr-2" />
-                    Update Career Goals
-                  </NeuroButton>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-
-            <GlassCard className="neuro">
-              <GlassCardHeader>
-                <GlassCardTitle className="text-lg">Recent Activity</GlassCardTitle>
-              </GlassCardHeader>
-              <GlassCardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-green-500" />
-                    <span>Completed Python Fundamentals</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-primary" />
-                    <span>Started ML Basics course</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-accent" />
-                    <span>Updated CV analysis</span>
-                  </div>
-                </div>
-              </GlassCardContent>
-            </GlassCard>
-          </div>
-        </div>
-
-        {/* AI Assistant Panel */}
-        <div className="w-80 glass-card border-l border-white/10 flex flex-col">
-          <div className="p-4 border-b border-white/10">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold">AI Assistant</h3>
-                <p className="text-xs text-muted-foreground">Always here to help</p>
+                )}
               </div>
             </div>
-          </div>
 
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div key={message.id} className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[80%] p-3 rounded-lg text-sm ${
-                      message.type === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "glass-card border border-white/10"
-                    }`}
-                  >
-                    {message.content}
+            {/* Stats Cards */}
+            <div className="grid gap-6 md:grid-cols-3 mb-8">
+              <GlassCard className="neuro border-cyan-400/20 shadow-lg shadow-cyan-500/10 bg-[#0e2439]/80">
+                <GlassCardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-cyan-300/80">Progress</p>
+                      <p className="text-2xl font-bold text-cyan-100">40%</p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 flex items-center justify-center">
+                      <TrendingUp className="h-6 w-6 text-cyan-400" />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
+                </GlassCardContent>
+              </GlassCard>
 
-          <div className="p-4 border-t border-white/10">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Ask me anything..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                className="glass-card border-white/20 focus:border-primary/50"
-              />
-              <NeuroButton size="sm" onClick={handleSendMessage}>
-                <Send className="h-4 w-4" />
-              </NeuroButton>
+              <GlassCard className="neuro border-cyan-400/20 shadow-lg shadow-cyan-500/10 bg-[#0e2439]/80">
+                <GlassCardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-cyan-300/80">Completed</p>
+                      <p className="text-2xl font-bold text-cyan-100">12</p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 flex items-center justify-center">
+                      <Award className="h-6 w-6 text-cyan-400" />
+                    </div>
+                  </div>
+                </GlassCardContent>
+              </GlassCard>
+
+              <GlassCard className="neuro border-cyan-400/20 shadow-lg shadow-cyan-500/10 bg-[#0e2439]/80">
+                <GlassCardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-cyan-300/80">Next Goal</p>
+                      <p className="text-2xl font-bold text-cyan-100">ML Basics</p>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 flex items-center justify-center">
+                      <Target className="h-6 w-6 text-cyan-400" />
+                    </div>
+                  </div>
+                </GlassCardContent>
+              </GlassCard>
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Roadmap Progress */}
+              <GlassCard className="neuro border-cyan-400/20 shadow-lg shadow-cyan-500/10 bg-[#0e2439]/80">
+                <GlassCardHeader>
+                  <GlassCardTitle className="text-cyan-100">Your Roadmap</GlassCardTitle>
+                </GlassCardHeader>
+                <GlassCardContent>
+                  <div className="space-y-4">
+                    {roadmapSteps.slice(0, 3).map((step) => (
+                      <div key={step.id} className="flex items-start gap-3">
+                        <div
+                          className={`h-3 w-3 rounded-full mt-2 flex-shrink-0 ${
+                            step.status === "completed"
+                              ? "bg-green-400"
+                              : step.status === "current"
+                              ? "bg-cyan-400"
+                              : "bg-cyan-400/30"
+                          }`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-cyan-100">{step.title}</p>
+                          <p className="text-xs text-cyan-300/80">{step.description}</p>
+                          <p className="text-xs text-cyan-400/60 mt-1">{step.date}</p>
+                        </div>
+                      </div>
+                    ))}
+                    <Link href="/dashboard/roadmap">
+                      <NeuroButton variant="outline" size="sm" className="w-full mt-4 border-cyan-400/30 text-cyan-300 hover:bg-cyan-400/10">
+                        View Full Roadmap
+                      </NeuroButton>
+                    </Link>
+                  </div>
+                </GlassCardContent>
+              </GlassCard>
+
+              {/* AI Chat */}
+              <GlassCard className="neuro border-cyan-400/20 shadow-lg shadow-cyan-500/10 bg-[#0e2439]/80">
+                <GlassCardHeader>
+                  <GlassCardTitle className="text-cyan-100">AI Assistant</GlassCardTitle>
+                </GlassCardHeader>
+                <GlassCardContent>
+                  <ScrollArea className="h-64 mb-4">
+                    <div className="space-y-4">
+                      {messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
+                        >
+                          <div
+                            className={`max-w-xs px-4 py-2 rounded-lg ${
+                              message.type === "user"
+                                ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white"
+                                : "bg-[#0e2439]/50 border border-cyan-400/30 text-cyan-100"
+                            }`}
+                          >
+                            <p className="text-sm">{message.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                  <div className="flex gap-2">
+                    <Input
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Ask your AI assistant..."
+                      className="flex-1 glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50"
+                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    />
+                    <NeuroButton onClick={handleSendMessage} size="sm" className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400">
+                      <Send className="h-4 w-4" />
+                    </NeuroButton>
+                  </div>
+                </GlassCardContent>
+              </GlassCard>
             </div>
           </div>
         </div>
       </div>
-    </div>
     </ProtectedRoute>
   )
 }

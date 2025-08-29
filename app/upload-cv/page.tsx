@@ -2,10 +2,11 @@
 import { useState, useCallback } from "react"
 import type React from "react"
 
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card"
+import { GlassCard, GlassCardContent } from "@/components/ui/glass-card"
 import { NeuroButton } from "@/components/ui/neuro-button"
 import { Progress } from "@/components/ui/progress"
-import { Upload, FileText, CheckCircle, AlertCircle, X, Sparkles, Brain } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Upload, FileText, CheckCircle, AlertCircle, X, ArrowLeft, Sparkles, Brain } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
@@ -23,6 +24,12 @@ export default function CVUploadPage() {
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [userInfo, setUserInfo] = useState({
+    fullName: "",
+    email: "",
+    phoneNumber: "",
+    address: "",
+  })
   const { user, updateUser } = useAuth()
   const router = useRouter()
 
@@ -56,13 +63,25 @@ export default function CVUploadPage() {
     setUploadedFile(uploadFile)
   }
 
-  const handleUploadOrAnalyze = () => {
+  const handleSubmit = () => {
+    if (!uploadedFile || uploadedFile.status !== "success") {
+      return
+    }
+
+    // Validate user info
+    if (!userInfo.fullName.trim() || !userInfo.email.trim()) {
+      return
+    }
+
     setIsLoading(true)
-    // Simulate loading for 3 seconds
+    
+    // Update user with CV upload status
+    updateUser({ hasUploadedCV: true })
+    
+    // Redirect to onboarding
     setTimeout(() => {
-      updateUser({ hasUploadedCV: true })
       router.push("/onboarding")
-    }, 3000)
+    }, 500)
   }
 
   const handleFileSelect = (files: FileList | null) => {
@@ -116,121 +135,174 @@ export default function CVUploadPage() {
     return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUserInfo({
+      ...userInfo,
+      [e.target.name]: e.target.value,
+    })
+  }
+
+  const isFormValid = uploadedFile && uploadedFile.status === "success" && userInfo.fullName.trim() && userInfo.email.trim()
+
   return (
     <ProtectedRoute requireAuth={true} requireCV={true}>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-        {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
-          <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-accent/20 blur-3xl" />
+      <div className="min-h-screen bg-[#0e2439] p-4 relative overflow-hidden">
+        {/* Animated background particles */}
+        <div className="absolute inset-0">
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-cyan-400 rounded-full animate-pulse opacity-60"></div>
+          <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-blue-400 rounded-full animate-pulse opacity-40"></div>
+          <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-cyan-300 rounded-full animate-pulse opacity-50"></div>
+          <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-blue-300 rounded-full animate-pulse opacity-30"></div>
+          <div className="absolute bottom-1/3 left-1/4 w-1 h-1 bg-cyan-500 rounded-full animate-pulse opacity-70"></div>
         </div>
 
-        <div className="relative mx-auto max-w-4xl">
+        <div className="relative mx-auto max-w-2xl">
           {/* Header */}
           <div className="mb-8">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-100 transition-all duration-300 mb-6 group"
+            >
+              <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform duration-300" />
+              Back to Dashboard
+            </Link>
+
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                <Upload className="h-8 w-8 text-primary" />
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 shadow-lg shadow-cyan-500/20">
+                <Upload className="h-10 w-10 text-cyan-400" />
               </div>
-              <h1 className="text-3xl font-bold text-balance mb-4">Upload Your CV</h1>
-              <p className="text-lg text-muted-foreground text-pretty max-w-2xl mx-auto">
-                Upload your resume and get AI-powered insights to improve your profile and discover new career
-                opportunities.
+              <h1 className="text-4xl font-bold text-cyan-100 text-balance mb-4 tracking-wide">Upload CV</h1>
+              <p className="text-lg text-cyan-300/80 text-pretty max-w-2xl mx-auto">
+                Upload your resume and provide your information to get started with your AI career journey.
               </p>
               {user?.email === "test@example.com" && (
-                <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/20 text-yellow-500 text-sm rounded-full border border-yellow-500/30">
+                <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-yellow-400/20 text-yellow-300 text-sm rounded-full border border-yellow-400/30 backdrop-blur-sm">
                   🧪 Test Mode
                 </div>
               )}
             </div>
           </div>
 
-          {/* Centered Upload Section */}
-          <div className="flex justify-center">
-            <div className="w-full max-w-2xl">
-              <GlassCard className="neuro">
-                <GlassCardHeader>
-                  <GlassCardTitle>Upload Document</GlassCardTitle>
-                </GlassCardHeader>
-                <GlassCardContent>
-                  {!uploadedFile ? (
-                    <div
-                      onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      className={`relative border-2 border-dashed rounded-lg p-12 md:p-16 text-center transition-smooth cursor-pointer hover:bg-white/5 ${
-                        isDragOver ? "border-primary bg-primary/10" : "border-white/20"
-                      }`}
-                    >
-                      <input
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        onChange={handleFileInput}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      />
-                      <div className="space-y-6">
-                        <div className="mx-auto flex h-20 w-20 md:h-24 md:w-24 items-center justify-center rounded-full bg-primary/10">
-                          <Upload className="h-10 w-10 md:h-12 md:w-12 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-xl md:text-2xl font-medium">Drop your CV here, or click to browse</p>
-                          <p className="text-base md:text-lg text-muted-foreground mt-3">Supports PDF, DOC, DOCX files up to 10MB</p>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
+          {/* Main Card */}
+          <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
+            <GlassCardContent className="p-8 space-y-8">
+              {/* CV Upload Section */}
+              <div>
+                <h2 className="text-2xl font-bold text-cyan-100 mb-6 text-center">Upload Your CV</h2>
+                
+                {!uploadedFile ? (
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 cursor-pointer hover:bg-cyan-400/5 ${
+                      isDragOver 
+                        ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
+                        : "border-cyan-400/50 hover:border-cyan-400"
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      onChange={handleFileInput}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
                     <div className="space-y-6">
-                      {/* File info */}
-                      <div className="flex items-center gap-4 p-6 glass-card rounded-lg">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10">
-                          <FileText className="h-8 w-8 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-lg font-medium truncate">{uploadedFile.file.name}</p>
-                          <p className="text-base text-muted-foreground">{formatFileSize(uploadedFile.file.size)}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {uploadedFile.status === "uploading" && (
-                            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
-                          )}
-                          {uploadedFile.status === "success" && <CheckCircle className="h-6 w-6 text-green-500" />}
-                          {uploadedFile.status === "error" && <AlertCircle className="h-6 w-6 text-red-500" />}
-                          <button onClick={removeFile} className="p-2 hover:bg-white/10 rounded-full transition-smooth">
-                            <X className="h-5 w-5" />
-                          </button>
-                        </div>
+                      <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30">
+                        <Upload className="h-10 w-10 text-cyan-400" />
                       </div>
-
-
-
-                      {/* Success actions */}
-                      {uploadedFile.status === "success" && !isLoading && (
-                        <div className="flex gap-4">
-                          <NeuroButton onClick={handleUploadOrAnalyze} className="flex-1 text-lg py-4">
-                            <Brain className="h-5 w-5 mr-3" />
-                            Analyze CV
-                          </NeuroButton>
-                        </div>
-                      )}
-
-                      {/* Loading state */}
-                      {isLoading && (
-                        <div className="text-center space-y-6 py-8">
-                          <div className="animate-pulse">
-                            <Sparkles className="h-12 w-12 text-primary mx-auto mb-4" />
-                            <p className="text-xl font-medium">Processing your CV...</p>
-                            <p className="text-base text-muted-foreground mt-2">
-                              Our AI is analyzing your document and preparing insights
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                      <div>
+                        <p className="text-xl font-medium text-cyan-100 mb-2">Drag and drop your CV here</p>
+                        <p className="text-cyan-300/80">or click to browse</p>
+                        <p className="text-sm text-cyan-300/60 mt-2">Supports PDF, DOC, DOCX files up to 10MB</p>
+                      </div>
                     </div>
-                  )}
-                </GlassCardContent>
-              </GlassCard>
-            </div>
-          </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* File info */}
+                    <div className="flex items-center gap-4 p-6 glass-card rounded-xl border border-cyan-400/20 bg-[#0e2439]/50">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30">
+                        <FileText className="h-8 w-8 text-cyan-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-lg font-medium text-cyan-100 truncate">{uploadedFile.file.name}</p>
+                        <p className="text-cyan-300/80">{formatFileSize(uploadedFile.file.size)}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {uploadedFile.status === "success" && <CheckCircle className="h-6 w-6 text-green-400" />}
+                        {uploadedFile.status === "error" && <AlertCircle className="h-6 w-6 text-red-400" />}
+                        <button onClick={removeFile} className="p-2 hover:bg-red-400/10 rounded-full transition-colors duration-300">
+                          <X className="h-5 w-5 text-red-400" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* User Info Section */}
+              <div className="border-t border-cyan-400/20 pt-8">
+                <h2 className="text-2xl font-bold text-cyan-100 mb-6 text-center">User Information</h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium text-cyan-100 mb-2 block">Full Name *</label>
+                    <Input
+                      name="fullName"
+                      value={userInfo.fullName}
+                      onChange={handleInputChange}
+                      className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
+                      placeholder="Enter your full name"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-cyan-100 mb-2 block">Email *</label>
+                    <Input
+                      name="email"
+                      type="email"
+                      value={userInfo.email}
+                      onChange={handleInputChange}
+                      className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
+                      placeholder="Enter your email"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-cyan-100 mb-2 block">Phone Number</label>
+                    <Input
+                      name="phoneNumber"
+                      value={userInfo.phoneNumber}
+                      onChange={handleInputChange}
+                      className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-cyan-100 mb-2 block">Address</label>
+                    <Input
+                      name="address"
+                      value={userInfo.address}
+                      onChange={handleInputChange}
+                      className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
+                      placeholder="Enter your address"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="text-center pt-4">
+                <NeuroButton 
+                  className="h-12 px-8 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold tracking-wide shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
+                  disabled={!isFormValid || isLoading}
+                  onClick={handleSubmit}
+                >
+                  {isLoading ? "Processing..." : "Submit & Continue"}
+                </NeuroButton>
+              </div>
+            </GlassCardContent>
+          </GlassCard>
         </div>
       </div>
     </ProtectedRoute>
