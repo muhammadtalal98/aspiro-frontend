@@ -29,20 +29,17 @@ export function ProtectedRoute({
     }
 
     if (user) {
-      // Check if user needs to upload CV
-      if (!user.hasUploadedCV && requireCV) {
-        router.push("/upload-cv")
-        return
+      // New flow: After login, redirect directly to onboarding
+      if (!user.hasCompletedOnboarding) {
+        const currentPath = window.location.pathname
+        if (currentPath !== "/onboarding") {
+          router.push("/onboarding")
+          return
+        }
       }
 
-      // Check if user needs to complete onboarding
-      if (user.hasUploadedCV && !user.hasCompletedOnboarding && requireOnboarding) {
-        router.push("/onboarding")
-        return
-      }
-
-      // If user has completed everything, redirect to dashboard
-      if (user.hasUploadedCV && user.hasCompletedOnboarding) {
+      // If user has completed onboarding, redirect to dashboard
+      if (user.hasCompletedOnboarding) {
         const currentPath = window.location.pathname
         if (currentPath === "/upload-cv" || currentPath === "/onboarding") {
           router.push("/dashboard")

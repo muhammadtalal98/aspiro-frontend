@@ -6,7 +6,6 @@ interface User {
   id: string
   email: string
   name: string
-  hasUploadedCV: boolean
   hasCompletedOnboarding: boolean
 }
 
@@ -66,14 +65,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Check for dummy user credentials
         if (email === "test@example.com" && password === "password123") {
-          // Dummy user for testing - starts fresh
-          const dummyUser: User = {
-            id: "dummy-1",
-            email: "test@example.com",
-            name: "Test User",
-            hasUploadedCV: false,
-            hasCompletedOnboarding: false,
-          }
+                  // Dummy user for testing - starts fresh
+        const dummyUser: User = {
+          id: "dummy-1",
+          email: "test@example.com",
+          name: "Test User",
+          hasCompletedOnboarding: false,
+        }
           setUser(dummyUser)
           localStorage.setItem("user", JSON.stringify(dummyUser))
           resolve({ success: true })
@@ -85,7 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: "1",
           email,
           name: email.split("@")[0], // Use email prefix as name
-          hasUploadedCV: false,
           hasCompletedOnboarding: false,
         }
 
@@ -112,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetUserProgress = () => {
     if (user) {
-      const resetUser = { ...user, hasUploadedCV: false, hasCompletedOnboarding: false }
+      const resetUser = { ...user, hasCompletedOnboarding: false }
       setUser(resetUser)
       localStorage.setItem("user", JSON.stringify(resetUser))
     }

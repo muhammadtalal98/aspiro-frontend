@@ -106,7 +106,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <ProtectedRoute requireAuth={true} requireCV={true} requireOnboarding={true}>
+    <ProtectedRoute requireAuth={true} requireOnboarding={true}>
       <div className="min-h-screen bg-[#0e2439] flex">
         {/* Sidebar */}
         <div className="w-64 glass-card border-r border-cyan-400/20 flex-shrink-0 flex flex-col bg-[#0e2439]/80 backdrop-blur-xl">
@@ -156,8 +156,8 @@ export default function DashboardPage() {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-2">Welcome back, {user?.name || "User"}!</h1>
-                  <p className="text-cyan-300/80">Continue your AI career journey and track your progress.</p>
+                  <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-2">Welcome, {user?.name || "User"}!</h1>
+                  <p className="text-cyan-300/80">Your personalized AI career plan is ready. Let's start your journey!</p>
                 </div>
                 {user?.email === "test@example.com" && (
                   <div className="flex gap-2">
