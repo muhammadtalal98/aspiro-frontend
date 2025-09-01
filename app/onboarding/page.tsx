@@ -7,7 +7,24 @@ import { NeuroButton } from "@/components/ui/neuro-button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
-import { ArrowRight, ArrowLeft, User, Target, GraduationCap, Code, Briefcase, CheckCircle, Clock, Globe, DollarSign, Users, Zap, Heart, Star, BookOpen, Award, TrendingUp, Lightbulb } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { 
+  ArrowRight, 
+  ArrowLeft, 
+  GraduationCap, 
+  Target, 
+  Zap, 
+  BookOpen, 
+  Clock, 
+  Briefcase, 
+  Heart, 
+  Users, 
+  Upload,
+  CheckCircle,
+  Brain,
+  X
+} from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import { ProtectedRoute } from "@/components/protected-route"
@@ -17,78 +34,399 @@ interface OnboardingStep {
   title: string
   subtitle: string
   icon: React.ElementType
-  type: "text" | "textarea" | "select" | "multiselect" | "completion"
+  type: "text" | "textarea" | "select" | "multiselect" | "file" | "checkbox" | "completion"
   options?: string[]
   placeholder?: string
   required?: boolean
+  fileTypes?: string[]
+  maxFiles?: number
 }
 
 const onboardingSteps: OnboardingStep[] = [
+  // Step 1: Basic Information
   {
-    id: "workDomain",
-    title: "What is your work domain of interest?",
-    subtitle: "Select the area that best describes your career interests",
-    icon: Target,
-    type: "select",
-    options: ["Software Development", "Data Science", "Design", "Marketing", "Product Management", "DevOps", "Cybersecurity", "Mobile Development", "Game Development", "AI/ML Engineering"],
-    required: true,
-  },
-  {
-    id: "name",
-    title: "What's your name?",
+    id: "fullName",
+    title: "What's your full name?",
     subtitle: "Let's start with the basics. We'll use this to personalize your experience.",
-    icon: User,
+    icon: Users,
     type: "text",
     placeholder: "Enter your full name",
     required: true,
   },
+  // Step 2: Academic Background
   {
-    id: "experience",
-    title: "What's your current experience level?",
-    subtitle: "This helps us tailor the right career path for you.",
-    icon: Briefcase,
+    id: "studyLevel",
+    title: "What is your current level of study?",
+    subtitle: "This helps us understand your educational context",
+    icon: GraduationCap,
     type: "select",
-    options: ["Complete Beginner (0-1 years)", "Some Experience (1-3 years)", "Intermediate (3-5 years)", "Professional (5-8 years)", "Senior/Lead (8+ years)"],
+    options: ["High School", "Undergraduate", "Postgraduate", "Graduate", "Other"],
     required: true,
   },
   {
-    id: "careerGoals",
-    title: "What are your primary career goals?",
-    subtitle: "Select all that apply",
+    id: "major",
+    title: "What is your major or field of study?",
+    subtitle: "Tell us about your academic focus",
+    icon: BookOpen,
+    type: "text",
+    placeholder: "e.g., Computer Science, Business Administration, Engineering",
+    required: true,
+  },
+  {
+    id: "enjoyedSubjects",
+    title: "Which subjects or courses do you enjoy the most?",
+    subtitle: "This helps us identify your interests and strengths",
+    icon: Heart,
+    type: "textarea",
+    placeholder: "Describe the subjects or courses that excite you the most...",
+    required: true,
+  },
+  {
+    id: "continueStudies",
+    title: "Do you plan to continue your studies after your current program?",
+    subtitle: "e.g., master's, PhD, or other advanced degrees",
+    icon: GraduationCap,
+    type: "select",
+    options: ["Yes, definitely", "Maybe, I'm considering it", "No, I plan to work", "I'm not sure yet"],
+    required: true,
+  },
+
+  // Step 2: Career Aspirations
+  {
+    id: "dreamJob",
+    title: "What is your dream job or role?",
+    subtitle: "Be specific about the position you aspire to",
     icon: Target,
+    type: "text",
+    placeholder: "e.g., Software Engineer, Data Scientist, Product Manager",
+    required: true,
+  },
+  {
+    id: "interestedIndustries",
+    title: "Which industries or fields interest you the most?",
+    subtitle: "Select all that apply",
+    icon: Briefcase,
     type: "multiselect",
     options: [
-      "Get my first job in tech",
-      "Switch careers to tech",
-      "Get promoted in my current role",
-      "Start my own business",
-      "Become a freelancer",
-      "Work remotely",
-      "Earn a higher salary",
-      "Learn new technologies",
-      "Contribute to open source",
-      "Build a portfolio",
-      "Get certified",
-      "Network with professionals",
-      "Mentor others",
-      "Work for a top tech company",
-      "Start a startup",
-      "Other",
+      "Technology/Software",
+      "Healthcare",
+      "Finance/Banking",
+      "Education",
+      "Manufacturing",
+      "Retail/E-commerce",
+      "Media/Entertainment",
+      "Government/Public Sector",
+      "Non-profit/Social Impact",
+      "Consulting",
+      "Research/Academia",
+      "Startups/Entrepreneurship",
+      "Other"
     ],
+    required: true,
+  },
+  {
+    id: "careerPath",
+    title: "Do you prefer a research, technical, creative, or business-oriented career path?",
+    subtitle: "Choose the path that best describes your interests",
+    icon: Target,
+    type: "select",
+    options: ["Research-oriented", "Technical", "Creative", "Business-oriented", "Mixed/Combination"],
+    required: true,
+  },
+  {
+    id: "entrepreneurship",
+    title: "Are you considering entrepreneurship or starting your own business in the future?",
+    subtitle: "This helps us understand your long-term goals",
+    icon: Briefcase,
+    type: "select",
+    options: ["Yes, definitely", "Maybe, I'm interested", "No, I prefer employment", "I'm not sure"],
+    required: true,
+  },
+
+  // Step 3: Skills & Strengths
+  {
+    id: "confidentSkills",
+    title: "What skills do you feel most confident in?",
+    subtitle: "List the skills you're good at or have experience with",
+    icon: Zap,
+    type: "textarea",
+    placeholder: "e.g., Programming, Communication, Problem-solving, Leadership...",
+    required: true,
+  },
+  {
+    id: "developSkills",
+    title: "What skills would you like to develop further?",
+    subtitle: "Identify areas for growth and improvement",
+    icon: Zap,
+    type: "textarea",
+    placeholder: "e.g., Public speaking, Technical skills, Project management...",
+    required: true,
+  },
+  {
+    id: "projectsExperience",
+    title: "Have you completed any projects, internships, or volunteering related to your field?",
+    subtitle: "Tell us about your practical experience",
+    icon: Briefcase,
+    type: "textarea",
+    placeholder: "Describe any relevant projects, internships, or volunteer work...",
+    required: false,
+  },
+
+  // Step 4: Learning & Development Preferences
+  {
+    id: "learningPreference",
+    title: "How do you prefer to learn outside of school?",
+    subtitle: "Select all that apply",
+    icon: BookOpen,
+    type: "multiselect",
+    options: [
+      "Online courses (Coursera, Udemy, etc.)",
+      "Workshops and seminars",
+      "Hands-on projects",
+      "Mentorship programs",
+      "Reading books and articles",
+      "Podcasts and videos",
+      "Networking events",
+      "Competitions and hackathons",
+      "Other"
+    ],
+    required: true,
+  },
+  {
+    id: "weeklyLearningTime",
+    title: "How much time can you dedicate weekly to learning new skills?",
+    subtitle: "Be realistic about your availability",
+    icon: Clock,
+    type: "select",
+    options: ["1-2 hours", "3-5 hours", "6-10 hours", "10+ hours", "Varies significantly"],
+    required: true,
+  },
+  {
+    id: "extracurricularInterest",
+    title: "Are you interested in extracurricular activities, student clubs, or competitions to build experience?",
+    subtitle: "This helps us suggest relevant opportunities",
+    icon: Users,
+    type: "select",
+    options: ["Yes, very interested", "Somewhat interested", "Not really", "I'm not sure"],
+    required: true,
+  },
+
+  // Step 5: Timeline & Goals
+  {
+    id: "graduationDate",
+    title: "When do you expect to graduate?",
+    subtitle: "This helps us plan your career timeline",
+    icon: Clock,
+    type: "select",
+    options: [
+      "Within 6 months",
+      "6-12 months",
+      "1-2 years",
+      "2-3 years",
+      "3+ years",
+      "Already graduated",
+      "Not currently studying"
+    ],
+    required: true,
+  },
+  {
+    id: "workAfterGraduation",
+    title: "Do you plan to work immediately after graduation?",
+    subtitle: "Yes/No",
+    icon: Briefcase,
+    type: "select",
+    options: ["Yes", "No", "I'm not sure"],
+    required: true,
+  },
+  {
+    id: "shortTermGoal",
+    title: "What is your short-term goal (1–2 years)?",
+    subtitle: "Be specific about what you want to achieve",
+    icon: Target,
+    type: "textarea",
+    placeholder: "e.g., Get my first job in tech, Complete a certification, Build a portfolio...",
+    required: true,
+  },
+  {
+    id: "longTermGoal",
+    title: "What is your long-term career goal (5–10 years)?",
+    subtitle: "Think about where you want to be in your career",
+    icon: Target,
+    type: "textarea",
+    placeholder: "e.g., Become a senior developer, Start my own company, Lead a team...",
+    required: true,
+  },
+
+  // Step 6: Work Preferences
+  {
+    id: "internshipOpenness",
+    title: "Are you open to internships, part-time jobs, or volunteering for experience?",
+    subtitle: "This helps us suggest relevant opportunities",
+    icon: Briefcase,
+    type: "select",
+    options: ["Yes, very open", "Somewhat open", "Not really", "I'm not sure"],
+    required: true,
+  },
+  {
+    id: "workLocation",
+    title: "Do you prefer on-site, remote, or hybrid opportunities?",
+    subtitle: "Select your preferred work arrangement",
+    icon: Briefcase,
+    type: "select",
+    options: ["On-site only", "Remote only", "Hybrid (mix of both)", "Flexible/No preference"],
+    required: true,
+  },
+
+  // Step 7: Career Motivation
+  {
+    id: "careerMotivation",
+    title: "What motivates you the most in your career journey?",
+    subtitle: "Choose the factor that drives you",
+    icon: Heart,
+    type: "select",
+    options: ["Growth and learning", "Salary and benefits", "Job stability", "Making an impact", "Work-life balance", "Recognition and status"],
+    required: true,
+  },
+  {
+    id: "currentFocus",
+    title: "Are you more focused on building a strong CV or exploring different career options for now?",
+    subtitle: "This helps us prioritize your next steps",
+    icon: Target,
+    type: "select",
+    options: ["Building a strong CV", "Exploring different options", "Both equally", "I'm not sure"],
+    required: true,
+  },
+
+  // Step 8: Career Challenges & Barriers
+  {
+    id: "careerChallenges",
+    title: "What challenges do you currently face in exploring or starting your career?",
+    subtitle: "Select all that apply",
+    icon: Heart,
+    type: "multiselect",
+    options: [
+      "Lack of experience",
+      "Uncertainty about career path",
+      "Limited technical skills",
+      "Limited soft skills",
+      "Geographic limitations",
+      "Financial constraints",
+      "Time constraints",
+      "Lack of network/connections",
+      "Competition in the job market",
+      "Other"
+    ],
+    required: true,
+  },
+  {
+    id: "academicSetbacks",
+    title: "Have you faced any setbacks in academics or projects that affect your career plans?",
+    subtitle: "This helps us understand your background better",
+    icon: Heart,
+    type: "textarea",
+    placeholder: "Describe any academic challenges or setbacks...",
+    required: false,
+  },
+  {
+    id: "personalBarriers",
+    title: "Are there any personal or logistical barriers that might affect your ability to pursue certain career paths?",
+    subtitle: "This helps us provide more personalized guidance",
+    icon: Heart,
+    type: "textarea",
+    placeholder: "Describe any personal or logistical challenges...",
+    required: false,
+  },
+
+  // Step 9: Networking & Professional Exposure
+  {
+    id: "linkedinUsage",
+    title: "Do you already use LinkedIn or other professional platforms?",
+    subtitle: "This helps us understand your online presence",
+    icon: Users,
+    type: "select",
+    options: ["Yes, I'm active on LinkedIn", "Yes, I have accounts but don't use them much", "No, but I'm interested", "No, not interested"],
+    required: true,
+  },
+  {
+    id: "mentorshipInterest",
+    title: "Are you interested in mentorship programs or career coaching?",
+    subtitle: "This helps us suggest relevant programs",
+    icon: Users,
+    type: "select",
+    options: ["Yes, very interested", "Somewhat interested", "Not really", "I'm not sure"],
+    required: true,
+  },
+  {
+    id: "portfolioHelp",
+    title: "Would you like help building your first professional portfolio or CV?",
+    subtitle: "This helps us provide relevant resources",
+    icon: Briefcase,
+    type: "select",
+    options: ["Yes, I need help", "I have some experience", "I'm confident in this area", "I'm not sure"],
+    required: true,
+  },
+
+  // Step 10: Professional Profiles & Documents
+  {
+    id: "cvUpload",
+    title: "Please upload your most recent CV/Resume (PDF, Word) if available.",
+    subtitle: "This helps us analyze your current profile",
+    icon: Upload,
+    type: "file",
+    fileTypes: [".pdf", ".doc", ".docx"],
+    maxFiles: 1,
+    required: false,
+  },
+  {
+    id: "transcriptsUpload",
+    title: "Upload your academic transcripts or mark sheets.",
+    subtitle: "This helps us understand your academic background",
+    icon: Upload,
+    type: "file",
+    fileTypes: [".pdf", ".jpg", ".png"],
+    maxFiles: 5,
+    required: false,
+  },
+  {
+    id: "portfolioLinks",
+    title: "Share links to any professional or project portfolios (e.g., GitHub, Behance, Dribbble).",
+    subtitle: "This helps us understand your work",
+    icon: Upload,
+    type: "textarea",
+    placeholder: "e.g., https://github.com/username, https://behance.net/portfolio...",
+    required: false,
+  },
+  {
+    id: "linkedinProfile",
+    title: "Provide a link to your LinkedIn profile if you have one.",
+    subtitle: "This helps us connect with your professional network",
+    icon: Users,
+    type: "text",
+    placeholder: "https://linkedin.com/in/yourprofile",
+    required: false,
+  },
+  {
+    id: "permissionToAnalyze",
+    title: "Do you give us permission to analyze these documents and profiles to generate your personalized career plan?",
+    subtitle: "We'll use AI to analyze your information and create a tailored career roadmap",
+    icon: Brain,
+    type: "checkbox",
+    required: true,
   },
   {
     id: "completion",
     title: "Analyzing your profile with AI",
-    subtitle: "Please wait while we process your information...",
-    icon: CheckCircle,
+    subtitle: "Please wait while we process your information and generate your personalized career plan...",
+    icon: Brain,
     type: "completion",
   },
 ]
 
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0)
-  const [formData, setFormData] = useState<Record<string, string | string[]>>({})
+  const [formData, setFormData] = useState<Record<string, any>>({})
   const [isAnimating, setIsAnimating] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({})
   const { user, updateUser } = useAuth()
   const router = useRouter()
 
@@ -111,15 +449,17 @@ export default function OnboardingPage() {
         // If we're now on the completion step, start the 10-second timer
         if (currentStep + 1 === onboardingSteps.length - 1) {
           setTimeout(() => {
-            updateUser({ hasCompletedOnboarding: true })
+            // Save onboarding data (in a real app, this would go to backend)
+            localStorage.setItem("onboardingData", JSON.stringify(formData))
+            // Update user with name and completion status
+            updateUser({ 
+              hasCompletedOnboarding: true,
+              name: formData.fullName as string || user?.name || "User"
+            })
             router.push("/dashboard")
           }, 10000) // 10 seconds
         }
       }, 150)
-    } else if (currentStep === onboardingSteps.length - 2) {
-      // Complete onboarding
-      updateUser({ hasCompletedOnboarding: true })
-      router.push("/dashboard")
     }
   }
 
@@ -133,7 +473,7 @@ export default function OnboardingPage() {
     }
   }
 
-  const handleInputChange = (value: string | string[]) => {
+  const handleInputChange = (value: string | string[] | boolean) => {
     setFormData((prev) => ({
       ...prev,
       [onboardingSteps[currentStep].id]: value,
@@ -154,17 +494,40 @@ export default function OnboardingPage() {
     }
   }
 
+  const handleFileUpload = (files: FileList | null) => {
+    if (!files) return
+    
+    const step = onboardingSteps[currentStep]
+    const fileArray = Array.from(files)
+    
+    setUploadedFiles(prev => ({
+      ...prev,
+      [step.id]: fileArray
+    }))
+  }
+
+  const removeFile = (stepId: string, index: number) => {
+    setUploadedFiles(prev => ({
+      ...prev,
+      [stepId]: prev[stepId]?.filter((_, i) => i !== index) || []
+    }))
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const sizes = ["Bytes", "KB", "MB", "GB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+  }
+
   const currentStepData = onboardingSteps[currentStep]
   const currentValue = formData[currentStepData.id]
   const isValid = !currentStepData.required || (currentValue && (
-    Array.isArray(currentValue) ? currentValue.length > 0 : currentValue.toString().trim().length > 0
+    Array.isArray(currentValue) ? currentValue.length > 0 : 
+    typeof currentValue === 'boolean' ? currentValue :
+    currentValue.toString().trim().length > 0
   )) || false
-
-
-  
-
-  
-
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && isValid && currentStepData.type !== "textarea") {
@@ -173,7 +536,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <ProtectedRoute requireAuth={true} requireCV={true} requireOnboarding={true}>
+    <ProtectedRoute requireAuth={true} requireOnboarding={true}>
       <div className="min-h-screen bg-[#0e2439] flex flex-col relative overflow-hidden">
         {/* Animated background particles */}
         <div className="absolute inset-0">
@@ -229,19 +592,18 @@ export default function OnboardingPage() {
                   <div className="text-center space-y-8">
                     {/* Glowing Circle with Text */}
                     <div className="relative">
-                                                {/* Glowing Outline Circle */}
-                          <div className="w-80 h-80 mx-auto relative">
-                            {/* Glowing Outline Ring */}
-                            <div className="absolute inset-0 rounded-full border-2 border-cyan-400 shadow-lg shadow-cyan-400/50 animate-pulse"></div>
-                            
-                            {/* Text */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="text-center text-white">
-                                <div className="text-xl font-semibold mb-2">Analyzing your</div>
-                                <div className="text-xl font-semibold">profile with AI</div>
-                              </div>
-                            </div>
+                      <div className="w-80 h-80 mx-auto relative">
+                        {/* Glowing Outline Ring */}
+                        <div className="absolute inset-0 rounded-full border-2 border-cyan-400 shadow-lg shadow-cyan-400/50 animate-pulse"></div>
+                        
+                        {/* Text */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="text-center text-white">
+                            <div className="text-xl font-semibold mb-2">Analyzing your</div>
+                            <div className="text-xl font-semibold">profile with AI</div>
                           </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -251,84 +613,168 @@ export default function OnboardingPage() {
                   <GlassCardContent className="p-12">
                     {/* Step content */}
                     <div className="space-y-8">
-                    {/* Question */}
-                    <div className="text-center">
-                      <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-4 tracking-wide">
-                        {currentStepData.title}
-                      </h1>
-                      {currentStepData.subtitle && (
-                        <p className="text-lg text-cyan-300/80 text-pretty max-w-lg mx-auto">
-                          {currentStepData.subtitle}
-                        </p>
+                      {/* Question */}
+                      <div className="text-center">
+                        <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-4 tracking-wide">
+                          {currentStepData.title}
+                        </h1>
+                        {currentStepData.subtitle && (
+                          <p className="text-lg text-cyan-300/80 text-pretty max-w-lg mx-auto">
+                            {currentStepData.subtitle}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Answer options */}
+                      {(currentStepData.type === "select" || currentStepData.type === "multiselect") && (
+                        <div className="space-y-4">
+                          {currentStepData.options?.map((option) => {
+                            const isSelected =
+                              currentStepData.type === "multiselect"
+                                ? (currentValue as string[])?.includes(option)
+                                : currentValue === option
+                            return (
+                              <button
+                                key={option}
+                                onClick={() => handleSelectOption(option)}
+                                className={`w-full glass-card p-6 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
+                                  isSelected 
+                                    ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
+                                    : "border-cyan-400/30 hover:border-cyan-400/50"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-lg text-cyan-100 font-medium">{option}</span>
+                                  {isSelected && (
+                                    <div className="h-6 w-6 rounded-full bg-cyan-400 flex items-center justify-center">
+                                      <CheckCircle className="h-4 w-4 text-white" />
+                                    </div>
+                                  )}
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {currentStepData.type === "text" && (
+                        <div>
+                          <Input
+                            type="text"
+                            placeholder={currentStepData.placeholder}
+                            value={(currentValue as string) || ""}
+                            onChange={(e) => handleInputChange(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-lg h-14 text-center"
+                            autoFocus
+                          />
+                        </div>
+                      )}
+
+                      {currentStepData.type === "textarea" && (
+                        <div>
+                          <Textarea
+                            placeholder={currentStepData.placeholder}
+                            value={(currentValue as string) || ""}
+                            onChange={(e) => handleInputChange(e.target.value)}
+                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-lg min-h-32 resize-none text-center"
+                            autoFocus
+                          />
+                        </div>
+                      )}
+
+                      {currentStepData.type === "checkbox" && (
+                        <div className="flex items-center space-x-2 justify-center">
+                          <Checkbox
+                            id="permission"
+                            checked={currentValue as boolean || false}
+                            onCheckedChange={(checked) => handleInputChange(checked as boolean)}
+                            className="border-cyan-400/30 data-[state=checked]:bg-cyan-400 data-[state=checked]:border-cyan-400"
+                          />
+                          <Label htmlFor="permission" className="text-cyan-100 text-lg">
+                            Yes, I give permission
+                          </Label>
+                        </div>
+                      )}
+
+                      {currentStepData.type === "file" && (
+                        <div>
+                          {!uploadedFiles[currentStepData.id] || uploadedFiles[currentStepData.id].length === 0 ? (
+                            <div
+                              onDrop={(e) => {
+                                e.preventDefault()
+                                handleFileUpload(e.dataTransfer.files)
+                              }}
+                              onDragOver={(e) => {
+                                e.preventDefault()
+                              }}
+                              onDragLeave={(e) => {
+                                e.preventDefault()
+                              }}
+                              className="relative border-2 border-solid rounded-xl p-12 text-center transition-all duration-300 cursor-pointer bg-[#0e2439]/50 backdrop-blur-sm border-cyan-400 shadow-lg shadow-cyan-400/30 hover:border-cyan-400/50 hover:shadow-cyan-400/40"
+                            >
+                              <input
+                                type="file"
+                                accept={currentStepData.fileTypes?.join(",")}
+                                multiple={currentStepData.maxFiles && currentStepData.maxFiles > 1}
+                                onChange={(e) => handleFileUpload(e.target.files)}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              />
+                              <div className="space-y-6">
+                                <div className="mx-auto flex h-16 w-16 items-center justify-center">
+                                  <Upload className="h-8 w-8 text-white" />
+                                </div>
+                                <div>
+                                  <p className="text-xl font-medium text-white mb-2">Drag and drop your file here</p>
+                                  <p className="text-white">or click to browse</p>
+                                  <p className="text-cyan-300/80 mt-2">
+                                    {currentStepData.fileTypes?.join(", ")} files accepted
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-6">
+                              {uploadedFiles[currentStepData.id].map((file, index) => (
+                                <div key={index} className="flex items-center gap-4 p-6 glass-card rounded-xl border border-cyan-400/20 bg-[#0e2439]/50 backdrop-blur-sm">
+                                  <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30">
+                                    <Upload className="h-8 w-8 text-cyan-400" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-lg font-medium text-cyan-100 truncate">{file.name}</p>
+                                    <p className="text-cyan-300/80">{formatFileSize(file.size)}</p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <CheckCircle className="h-6 w-6 text-green-400" />
+                                    <button 
+                                      onClick={() => removeFile(currentStepData.id, index)} 
+                                      className="p-2 hover:bg-red-400/10 rounded-full transition-colors duration-300"
+                                    >
+                                      <X className="h-5 w-5 text-red-400" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                              <button
+                                onClick={() => setUploadedFiles(prev => ({ ...prev, [currentStepData.id]: [] }))}
+                                className="w-full p-4 border-2 border-dashed border-cyan-400/30 rounded-xl text-center transition-all duration-300 hover:border-cyan-400/50 hover:bg-cyan-400/5"
+                              >
+                                <div className="space-y-2">
+                                  <Upload className="h-8 w-8 text-cyan-400 mx-auto" />
+                                  <p className="text-cyan-100">Add more files</p>
+                                </div>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
-
-                    {/* Answer options */}
-                    {(currentStepData.type === "select" || currentStepData.type === "multiselect") && (
-                      <div className="space-y-4">
-                        {currentStepData.options?.map((option) => {
-                          const isSelected =
-                            currentStepData.type === "multiselect"
-                              ? (currentValue as string[])?.includes(option)
-                              : currentValue === option
-                          return (
-                            <button
-                              key={option}
-                              onClick={() => handleSelectOption(option)}
-                              className={`w-full glass-card p-6 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
-                                isSelected 
-                                  ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
-                                  : "border-cyan-400/30 hover:border-cyan-400/50"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-lg text-cyan-100 font-medium">{option}</span>
-                                {isSelected && (
-                                  <div className="h-6 w-6 rounded-full bg-cyan-400 flex items-center justify-center">
-                                    <CheckCircle className="h-4 w-4 text-white" />
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    )}
-
-                    {currentStepData.type === "text" && (
-                      <div>
-                        <Input
-                          type="text"
-                          placeholder={currentStepData.placeholder}
-                          value={(currentValue as string) || ""}
-                          onChange={(e) => handleInputChange(e.target.value)}
-                          onKeyPress={handleKeyPress}
-                          className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-lg h-14 text-center"
-                          autoFocus
-                        />
-                      </div>
-                    )}
-
-                    {currentStepData.type === "textarea" && (
-                      <div>
-                        <Textarea
-                          placeholder={currentStepData.placeholder}
-                          value={(currentValue as string) || ""}
-                          onChange={(e) => handleInputChange(e.target.value)}
-                          className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-lg min-h-32 resize-none text-center"
-                          autoFocus
-                        />
-                      </div>
-                    )}
-
-
-                  </div>
-                </GlassCardContent>
-              </GlassCard>
+                  </GlassCardContent>
+                </GlassCard>
               )}
             </div>
 
-                        {/* Navigation */}
+            {/* Navigation */}
             {currentStepData.type !== "completion" && (
               <div className="flex items-center justify-between mt-8">
                 <button

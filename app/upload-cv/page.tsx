@@ -27,8 +27,6 @@ export default function CVUploadPage() {
   const [userInfo, setUserInfo] = useState({
     fullName: "",
     email: "",
-    phoneNumber: "",
-    address: "",
   })
   const { user, updateUser } = useAuth()
   const router = useRouter()
@@ -69,14 +67,17 @@ export default function CVUploadPage() {
     }
 
     // Validate user info
-    if (!userInfo.fullName.trim() || !userInfo.email.trim()) {
+    if (!userInfo.fullName.trim()) {
       return
     }
 
     setIsLoading(true)
     
-    // Update user with CV upload status
-    updateUser({ hasUploadedCV: true })
+    // Update user with CV upload status and name
+    updateUser({ 
+      hasUploadedCV: true,
+      name: userInfo.fullName.trim()
+    })
     
     // Redirect to onboarding
     setTimeout(() => {
@@ -142,7 +143,7 @@ export default function CVUploadPage() {
     })
   }
 
-  const isFormValid = uploadedFile && uploadedFile.status === "success" && userInfo.fullName.trim() && userInfo.email.trim()
+  const isFormValid = uploadedFile && uploadedFile.status === "success" && userInfo.fullName.trim()
 
   return (
     <ProtectedRoute requireAuth={true} requireCV={true}>
@@ -241,8 +242,8 @@ export default function CVUploadPage() {
 
               {/* User Info Section */}
               <div className="border-t border-cyan-400/20 pt-8">
-                <h2 className="text-2xl font-bold text-cyan-100 mb-6 text-center">User Information</h2>
-                <div className="grid gap-4 md:grid-cols-2">
+                <h2 className="text-2xl font-bold text-cyan-100 mb-6 text-center">Basic Information</h2>
+                <div className="max-w-md mx-auto">
                   <div>
                     <label className="text-sm font-medium text-cyan-100 mb-2 block">Full Name *</label>
                     <Input
@@ -252,38 +253,6 @@ export default function CVUploadPage() {
                       className="border border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 backdrop-blur-sm text-white placeholder-cyan-300/50 transition-all duration-300 h-12 rounded-lg px-4"
                       placeholder="Enter your full name"
                       required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-cyan-100 mb-2 block">Email *</label>
-                    <Input
-                      name="email"
-                      type="email"
-                      value={userInfo.email}
-                      onChange={handleInputChange}
-                      className="border border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 backdrop-blur-sm text-white placeholder-cyan-300/50 transition-all duration-300 h-12 rounded-lg px-4"
-                      placeholder="Enter your email"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-cyan-100 mb-2 block">Phone Number</label>
-                    <Input
-                      name="phoneNumber"
-                      value={userInfo.phoneNumber}
-                      onChange={handleInputChange}
-                      className="border border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 backdrop-blur-sm text-white placeholder-cyan-300/50 transition-all duration-300 h-12 rounded-lg px-4"
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-cyan-100 mb-2 block">Address</label>
-                    <Input
-                      name="address"
-                      value={userInfo.address}
-                      onChange={handleInputChange}
-                      className="border border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 backdrop-blur-sm text-white placeholder-cyan-300/50 transition-all duration-300 h-12 rounded-lg px-4"
-                      placeholder="Enter your address"
                     />
                   </div>
                 </div>
