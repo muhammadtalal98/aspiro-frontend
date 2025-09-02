@@ -63,20 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return
         }
 
-        // Check for dummy user credentials
-        if (email === "test@example.com" && password === "password123") {
-                  // Dummy user for testing - starts fresh
-        const dummyUser: User = {
-          id: "dummy-1",
-          email: "test@example.com",
-          name: "Test User",
-          hasCompletedOnboarding: false,
-        }
-          setUser(dummyUser)
-          localStorage.setItem("user", JSON.stringify(dummyUser))
-          resolve({ success: true })
-          return
-        }
+
 
         // Regular user login
         const newUser: User = {

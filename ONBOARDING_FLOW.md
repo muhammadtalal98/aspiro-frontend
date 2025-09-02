@@ -123,17 +123,13 @@ The onboarding consists of 10 comprehensive steps covering:
 
 ## Testing
 
-### Test User Credentials:
-- Email: `test@example.com`
-- Password: `password123`
-
 ### Test Flow:
-1. Login with test credentials
+1. Register with any email and password
 2. Complete the 11-step onboarding (including CV/transcript upload)
 3. Verify redirect to dashboard
 
 ### Reset Progress:
-- Test users can use "Reset Progress" button on dashboard to start over
+- Users can use "Reset Progress" button on dashboard to start over
 
 ## Future Enhancements
 

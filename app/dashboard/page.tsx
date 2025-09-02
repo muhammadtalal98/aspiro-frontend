@@ -67,26 +67,7 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute requireAuth={true} requireOnboarding={true}>
       <div className="min-h-screen bg-[#0e2439] flex flex-col">
-        {/* Top Navigation Bar */}
-        <div className="h-16 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-6">
-          <div className="flex items-center gap-6">
-            <button className="w-8 h-8 flex items-center justify-center text-white hover:text-cyan-400 transition-colors">
-              <Menu className="h-5 w-5" />
-            </button>
-            <nav className="flex items-center gap-6">
-              <a href="#" className="text-white/80 hover:text-white transition-colors">Home</a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors">About</a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors">Services</a>
-              <a href="#" className="text-white/80 hover:text-white transition-colors">Contact</a>
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-white font-medium">{user?.name || "John Doe"}</span>
-          </div>
-        </div>
+
 
                  {/* Main Content Area */}
          <div className="flex-1 flex">
@@ -112,6 +93,19 @@ export default function DashboardPage() {
 
            {/* Dashboard Content */}
            <div className="flex-1 p-6 overflow-auto backdrop-blur-xl bg-[#0e2439]/40">
+             {/* Regenerate Button */}
+             <div className="flex justify-center mb-8">
+               <NeuroButton 
+                 className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-6 py-3 rounded-lg shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
+                 onClick={() => {
+                   // Add regenerate logic here
+                   console.log("Regenerating roadmap...")
+                 }}
+               >
+                 🔄 Regenerate Roadmap
+               </NeuroButton>
+             </div>
+             
              {/* Timeline */}
              <div className="flex justify-center pt-8">
                <div className="relative max-w-4xl w-full">

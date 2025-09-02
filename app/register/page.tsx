@@ -93,13 +93,7 @@ export default function RegisterPage() {
             <GlassCardTitle className="text-2xl">Create Account</GlassCardTitle>
             <GlassCardDescription>Start your AI career journey today</GlassCardDescription>
             
-            {/* Test Mode Info */}
-            <div className="mt-4 p-3 glass-card border border-yellow-500/30 bg-yellow-500/10 rounded-lg">
-              <p className="text-sm text-yellow-500 font-medium mb-2">🧪 Test Mode Available</p>
-              <p className="text-xs text-yellow-500/80">
-                Use <strong>test@example.com</strong> / <strong>password123</strong> to test the complete flow
-              </p>
-            </div>
+
           </GlassCardHeader>
 
           <GlassCardContent>
