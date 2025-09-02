@@ -27,7 +27,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
-import { ProtectedRoute } from "@/components/protected-route"
+import ProtectedRoute from "@/components/ProtectedRoute"
 
 interface OnboardingStep {
   id: string

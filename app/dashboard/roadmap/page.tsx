@@ -30,7 +30,7 @@ import {
   Share2,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { ProtectedRoute } from "@/components/protected-route"
+import ProtectedRoute from "@/components/ProtectedRoute"
 
 interface RoadmapStep {
   id: string

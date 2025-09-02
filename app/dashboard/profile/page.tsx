@@ -16,7 +16,7 @@ import {
   Globe,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { ProtectedRoute } from "@/components/protected-route"
+import ProtectedRoute from "@/components/ProtectedRoute"
 
 export default function ProfilePage() {
   const { user } = useAuth()

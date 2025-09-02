@@ -1,5 +1,5 @@
 "use client"
-import { useEffect } from "react"
+import React, { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { LoadingSpinner } from "./loading-spinner"
@@ -7,14 +7,12 @@ import { LoadingSpinner } from "./loading-spinner"
 interface ProtectedRouteProps {
   children: React.ReactNode
   requireAuth?: boolean
-  requireCV?: boolean
   requireOnboarding?: boolean
 }
 
-export function ProtectedRoute({ 
+export default function ProtectedRoute({ 
   children, 
   requireAuth = true, 
-  requireCV = false, 
   requireOnboarding = false 
 }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth()
@@ -28,26 +26,14 @@ export function ProtectedRoute({
       return
     }
 
-    if (user) {
-      // New flow: After login, redirect directly to onboarding
-      if (!user.hasCompletedOnboarding) {
-        const currentPath = window.location.pathname
-        if (currentPath !== "/onboarding") {
-          router.push("/onboarding")
-          return
-        }
-      }
-
-      // If user has completed onboarding, redirect to dashboard
-      if (user.hasCompletedOnboarding) {
-        const currentPath = window.location.pathname
-        if (currentPath === "/upload-cv" || currentPath === "/onboarding") {
-          router.push("/dashboard")
-          return
-        }
+    if (user && requireOnboarding && !user.hasCompletedOnboarding) {
+      const currentPath = window.location.pathname
+      if (currentPath !== "/onboarding") {
+        router.push("/onboarding")
+        return
       }
     }
-  }, [user, isLoading, requireAuth, requireCV, requireOnboarding, router])
+  }, [user, isLoading, requireAuth, requireOnboarding, router])
 
   if (isLoading) {
     return (

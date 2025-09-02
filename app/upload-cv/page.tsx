@@ -10,7 +10,7 @@ import { Upload, FileText, CheckCircle, AlertCircle, X, ArrowLeft, Sparkles, Bra
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
-import { ProtectedRoute } from "@/components/protected-route"
+import ProtectedRoute from "@/components/ProtectedRoute"
 import { validators } from "@/lib/validation"
 
 interface UploadedFile {
