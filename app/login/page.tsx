@@ -86,13 +86,7 @@ export default function LoginPage() {
               Sign in to your AI Career Path account
             </GlassCardDescription>
             
-            {/* Test Mode Info */}
-            <div className="mt-6 p-4 glass-card border border-yellow-400/30 bg-yellow-400/10 rounded-xl backdrop-blur-sm">
-              <p className="text-sm text-yellow-300 font-medium mb-2">🧪 Test Mode Available</p>
-              <p className="text-xs text-yellow-300/80">
-                Use <strong>test@example.com</strong> / <strong>password123</strong> to test the complete flow
-              </p>
-            </div>
+
           </GlassCardHeader>
 
           <GlassCardContent className="space-y-6">

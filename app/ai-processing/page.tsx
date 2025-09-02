@@ -148,12 +148,7 @@ export default function AIProcessingPage() {
             </div>
           </div>
 
-          {/* Test mode indicator */}
-          {user?.email === "test@example.com" && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400/20 text-yellow-300 text-sm rounded-full border border-yellow-400/30 backdrop-blur-sm">
-              🧪 Test Mode - Processing simulation
-            </div>
-          )}
+
         </div>
 
         {/* Floating elements */}

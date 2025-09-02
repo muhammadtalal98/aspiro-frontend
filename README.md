@@ -100,22 +100,14 @@ pnpm dev
 
 ## Testing the Flow
 
-### Quick Test Mode
-For immediate testing without registration, use these credentials:
-- **Email**: `test@example.com`
-- **Password**: `password123`
-
-This will start you fresh in the flow and allow you to test all features.
-
 ### Regular Flow
 1. **Register/Login**: Use any email and password (minimum 6 characters)
 2. **Onboarding**: Complete the questionnaire and provide CV information
 3. **Dashboard**: Access the main dashboard with personalized content
 
-### Test Mode Features
+### Features
 - **Reset Progress**: Use the "Reset Progress" button on the dashboard to start over
-- **Visual Indicators**: Test mode is clearly marked with yellow badges
-- **Fresh Start**: Test user always starts with no onboarding completed
+- **Progress Tracking**: Monitor your advancement through the onboarding process
 
 ## Dummy Data
 

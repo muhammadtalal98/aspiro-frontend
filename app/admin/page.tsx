@@ -142,10 +142,11 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Right Panel */}
-          <div className="w-80 p-6 backdrop-blur-xl bg-[#0e2439]/40 border-l border-cyan-400/20">
-            {/* Completion Rate */}
-            <div className="mb-8">
-              <div className="text-center mb-4">
+          <div className="w-90 space-y-6 p-6 mt-[65px]">
+            {/* Completion Rate Card */}
+            <div className="backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-white mb-4 text-center">Completion Rate</h3>
+              <div className="text-center">
                 <div className="relative w-24 h-24 mx-auto mb-3">
                   <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
                     <circle
@@ -173,18 +174,18 @@ export default function AdminDashboardPage() {
                     <span className="text-2xl font-bold text-white">78%</span>
                   </div>
                 </div>
-                <div className="text-white font-medium">Completion Rate</div>
+                <div className="text-white font-medium">Overall Progress</div>
               </div>
             </div>
 
-            {/* Available Majors */}
-            <div>
+            {/* Available Majors Card */}
+            <div className="backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 rounded-xl p-6">
               <h3 className="text-lg font-bold text-white mb-4">Available Majors</h3>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {availableMajors.map((major, index) => (
-                  <div key={index} className="flex items-center gap-3">
+                  <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-[#0e2439]/40 border border-cyan-400/20">
                     <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
-                    <span className="text-white/80 text-sm">{major}</span>
+                    <span className="text-white/90 text-sm font-medium">{major}</span>
                   </div>
                 ))}
               </div>
