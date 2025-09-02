@@ -1,6 +1,6 @@
 # AI Career Path - Authentication Flow
 
-This project implements a comprehensive authentication flow with CV upload and onboarding steps.
+This project implements a comprehensive authentication flow with onboarding steps including CV collection.
 
 ## Authentication Flow
 
@@ -12,13 +12,11 @@ This project implements a comprehensive authentication flow with CV upload and o
   - Password minimum length (6 characters)
   - Password confirmation matching
 
-### 2. CV Upload (Required Step)
-- After successful login, users are redirected to CV upload
-- File validation includes:
-  - Supported formats: PDF, DOC, DOCX
-  - Maximum file size: 10MB
-  - Real-time upload progress simulation
-  - AI analysis simulation with skills detection
+### 2. Onboarding with CV Collection (Required Step)
+- After successful login, users are redirected to onboarding
+- Multi-step questionnaire with CV information collection
+- File upload option available during onboarding if needed
+- Progress tracking through onboarding steps
 
 ### 3. Onboarding Questions (Required Step)
 - Multi-step questionnaire with progress tracking
@@ -32,7 +30,7 @@ This project implements a comprehensive authentication flow with CV upload and o
 - Smooth transitions between steps
 
 ### 4. Dashboard Access
-- Only accessible after completing CV upload and onboarding
+- Only accessible after completing onboarding
 - Personalized welcome message
 - Progress tracking
 - AI assistant chat
@@ -44,8 +42,7 @@ This project implements a comprehensive authentication flow with CV upload and o
 ├── app/
 │   ├── login/page.tsx          # Login form with validation
 │   ├── register/page.tsx       # Registration form with validation
-│   ├── upload-cv/page.tsx      # CV upload with file validation
-│   ├── onboarding/page.tsx     # Multi-step onboarding flow
+│   ├── onboarding/page.tsx     # Multi-step onboarding flow with CV collection
 │   ├── dashboard/page.tsx      # Main dashboard (protected)
 │   └── page.tsx               # Landing page with auth redirects
 ├── components/
@@ -62,7 +59,7 @@ This project implements a comprehensive authentication flow with CV upload and o
 ### Authentication Context
 - Manages user state across the application
 - Handles login/logout functionality
-- Tracks user progress (CV upload, onboarding completion)
+- Tracks user progress (onboarding completion)
 - Persistent storage using localStorage
 
 ### Protected Routes
@@ -112,14 +109,13 @@ This will start you fresh in the flow and allow you to test all features.
 
 ### Regular Flow
 1. **Register/Login**: Use any email and password (minimum 6 characters)
-2. **CV Upload**: Upload any PDF, DOC, or DOCX file (under 10MB)
-3. **Onboarding**: Complete the questionnaire
-4. **Dashboard**: Access the main dashboard with personalized content
+2. **Onboarding**: Complete the questionnaire and provide CV information
+3. **Dashboard**: Access the main dashboard with personalized content
 
 ### Test Mode Features
 - **Reset Progress**: Use the "Reset Progress" button on the dashboard to start over
 - **Visual Indicators**: Test mode is clearly marked with yellow badges
-- **Fresh Start**: Test user always starts with no CV uploaded and no onboarding completed
+- **Fresh Start**: Test user always starts with no onboarding completed
 
 ## Dummy Data
 
