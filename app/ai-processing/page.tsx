@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { ProtectedRoute } from "@/components/protected-route"
+import ProtectedRoute from "@/components/ProtectedRoute"
 import { Brain, Sparkles, Zap, Cpu } from "lucide-react"
 
 export default function AIProcessingPage() {

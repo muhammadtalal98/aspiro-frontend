@@ -45,7 +45,7 @@ export default function RegisterPage() {
       // Simulate registration and auto-login
       const result = await login(formData.email, formData.password)
       if (result.success) {
-        router.push("/upload-cv")
+        router.push("/onboarding")
       } else {
         setError(result.error || "Registration failed")
       }

@@ -32,9 +32,9 @@ const features = [
   },
   {
     icon: FileText,
-    title: "CV Upload & Analysis",
+    title: "CV Collection & Analysis",
     description:
-      "Upload your resume for intelligent analysis and receive actionable feedback to improve your profile.",
+      "Provide your CV information through our intelligent questionnaire for personalized career insights.",
   },
   {
     icon: BarChart3,
@@ -61,9 +61,9 @@ const howItWorksSteps: TimelineItem[] = [
   },
   {
     id: "2",
-    title: "Upload Your CV",
+    title: "Provide CV Information",
     description:
-      "Our AI analyzes your resume to understand your current position and identify growth opportunities.",
+      "Our AI analyzes your CV information to understand your current position and identify growth opportunities.",
     status: "current",
     date: "Step 2",
   },
@@ -92,9 +92,7 @@ export default function LandingPage() {
   useEffect(() => {
     if (!isLoading && user) {
       // Redirect authenticated users based on their progress
-      if (!user.hasUploadedCV) {
-        router.push("/upload-cv");
-      } else if (!user.hasCompletedOnboarding) {
+      if (!user.hasCompletedOnboarding) {
         router.push("/onboarding");
       } else {
         router.push("/dashboard");
