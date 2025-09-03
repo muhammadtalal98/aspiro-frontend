@@ -567,7 +567,7 @@ export default function OnboardingPage() {
 
         {/* Main content */}
         <div className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-2xl">
+          <div className="w-[40vw] max-w-2xl">
             <div
               className={`transition-all duration-500 ease-out ${
                 isAnimating ? "opacity-0 transform translate-y-8" : "opacity-100 transform translate-y-0"
@@ -609,15 +609,15 @@ export default function OnboardingPage() {
                 </div>
               ) : (
                 // Other steps with card wrapper
-                <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
-                  <GlassCardContent className="p-12">
-                    {/* Step content */}
-                    <div className="space-y-8">
-                      {/* Question */}
-                      <div className="text-center">
-                        <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-4 tracking-wide">
-                          {currentStepData.title}
-                        </h1>
+                                 <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
+                   <GlassCardContent className="p-8">
+                                         {/* Step content */}
+                     <div className="space-y-6">
+                                             {/* Question */}
+                       <div className="text-center">
+                         <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-4 tracking-wide">
+                           {currentStepData.title}
+                         </h1>
                         {currentStepData.subtitle && (
                           <p className="text-lg text-cyan-300/80 text-pretty max-w-lg mx-auto">
                             {currentStepData.subtitle}
@@ -627,22 +627,22 @@ export default function OnboardingPage() {
 
                       {/* Answer options */}
                       {(currentStepData.type === "select" || currentStepData.type === "multiselect") && (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {currentStepData.options?.map((option) => {
                             const isSelected =
                               currentStepData.type === "multiselect"
                                 ? (currentValue as string[])?.includes(option)
                                 : currentValue === option
                             return (
-                              <button
-                                key={option}
-                                onClick={() => handleSelectOption(option)}
-                                className={`w-full glass-card p-6 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
-                                  isSelected 
-                                    ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
-                                    : "border-cyan-400/30 hover:border-cyan-400/50"
-                                }`}
-                              >
+                                                             <button
+                                 key={option}
+                                 onClick={() => handleSelectOption(option)}
+                                 className={`w-full glass-card p-4 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
+                                   isSelected 
+                                     ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
+                                     : "border-cyan-400/30 hover:border-cyan-400/50"
+                                 }`}
+                               >
                                 <div className="flex items-center justify-between">
                                   <span className="text-lg text-cyan-100 font-medium">{option}</span>
                                   {isSelected && (
@@ -665,7 +665,7 @@ export default function OnboardingPage() {
                             value={(currentValue as string) || ""}
                             onChange={(e) => handleInputChange(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-lg h-14 text-center"
+                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-lg h-14 text-left"
                             autoFocus
                           />
                         </div>
@@ -677,7 +677,7 @@ export default function OnboardingPage() {
                             placeholder={currentStepData.placeholder}
                             value={(currentValue as string) || ""}
                             onChange={(e) => handleInputChange(e.target.value)}
-                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-lg min-h-32 resize-none text-center"
+                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-lg min-h-32 resize-none text-left"
                             autoFocus
                           />
                         </div>
