@@ -17,14 +17,14 @@ const sidebarItems = [
   { icon: BarChart3, label: "Dashboard", href: "/admin", active: true },
   { icon: BookOpen, label: "Courses", href: "/admin/courses" },
   { icon: Users2, label: "Majors", href: "/admin/majors" },
-  { icon: User, label: "Instructors", href: "/admin/instructors" },
+
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ]
 
 const statsData = [
   { value: "120", label: "Courses" },
   { value: "15.2k", label: "Enrollments" },
-  { value: "54", label: "Instructors" },
+  
 ]
 
 const coursesData = [
@@ -57,7 +57,7 @@ export default function AdminDashboardPage() {
               <div className="w-8 h-8 bg-cyan-400 rounded-full flex items-center justify-center">
                 <User className="h-4 w-4 text-white" />
               </div>
-              <span className="text-white font-bold text-sm">DASHBOARD</span>
+              <span className="text-white font-bold text-sm">AI-Career Path</span>
             </div>
           </div>
 

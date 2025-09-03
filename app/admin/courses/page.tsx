@@ -27,7 +27,7 @@ const adminSidebarItems = [
   { icon: Square, label: "Dashboard", href: "/admin", number: "1" },
   { icon: BookOpen, label: "Courses", href: "/admin/courses", active: true },
   { icon: Users, label: "Majors", href: "/admin/majors" },
-  { icon: User, label: "Instructors", href: "/admin/instructors" },
+
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ]
 
@@ -122,7 +122,7 @@ export default function CoursesManagement() {
           {/* Header */}
           <div className="flex items-center gap-2 mb-8">
             <User className="h-5 w-5 text-white" />
-            <span className="text-white font-semibold">DASHBOARD</span>
+            <span className="text-white font-semibold">AI-Career Path</span>
           </div>
 
           {/* Navigation Items */}
@@ -157,7 +157,7 @@ export default function CoursesManagement() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-white mb-2">Courses</h1>
-            <p className="text-cyan-300">Manage courses, instructors, and content.</p>
+            <p className="text-cyan-300">Manage courses and content.</p>
           </div>
           <NeuroButton className="flex items-center gap-2 bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30">
             <Plus className="h-4 w-4" />
@@ -173,7 +173,7 @@ export default function CoursesManagement() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-cyan-300" />
                   <Input
-                    placeholder="Search courses or instructors..."
+                    placeholder="Search courses..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 focus:border-cyan-400/60 text-white placeholder-cyan-300/50"
