@@ -160,7 +160,7 @@ export default function ReportsManagement() {
           {/* Header */}
           <div className="flex items-center gap-2 mb-8">
             <User className="h-5 w-5 text-white" />
-            <span className="text-white font-semibold">DASHBOARD</span>
+            <span className="text-white font-semibold">AI-Career Path</span>
           </div>
 
           {/* Navigation Items */}

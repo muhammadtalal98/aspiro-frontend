@@ -25,7 +25,7 @@ import ProtectedRoute from "@/components/ProtectedRoute"
 const sidebarItems = [
   { icon: ArrowLeft, href: "/dashboard", active: true },
   { icon: ArrowRight, href: "/dashboard/roadmap" },
-  { icon: Edit, href: "/dashboard/profile" },
+  { icon: Users, href: "/dashboard/users" },
   { icon: Folder, href: "/dashboard/settings" },
   { icon: BarChart3, href: "/dashboard/analytics" },
 ]
