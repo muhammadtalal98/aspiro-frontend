@@ -9,6 +9,7 @@
   },
   "scripts": {
   "build": "NEXT_DISABLE_LIGHTNINGCSS=1 next build",
+  "postinstall": "node scripts/patch-lightningcss.js || echo 'skip patch'",
     "dev": "next dev",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
