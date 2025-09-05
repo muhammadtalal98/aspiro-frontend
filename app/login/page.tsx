@@ -36,20 +36,28 @@ export default function LoginPage() {
     try {
       const result = await login(formData.email, formData.password)
       if (result.success) {
-        // Login successful, check user role and onboarding state for routing
-  const storedUser = localStorage.getItem("user")
-  const storedOnboarding = localStorage.getItem("onboardingData") || sessionStorage.getItem("onboardingData")
+        // Get user data and onboarding status
+        const storedUser = localStorage.getItem("user")
+        const onboardingData = localStorage.getItem("onboardingData") || sessionStorage.getItem("onboardingData")
+        
         if (storedUser) {
           const userData = JSON.parse(storedUser)
+          
+          // Admin users go to admin dashboard
           if (userData.role === "admin") {
             router.push("/admin")
+            return
+          }
+          
+          // Regular users: check if onboarding is completed
+          if (onboardingData) {
+            router.push("/dashboard")
           } else {
-            const hasOnboarded = !!userData.hasCompletedOnboarding || !!storedOnboarding
-            router.push(hasOnboarded ? "/dashboard" : "/onboarding")
+            router.push("/onboarding")
           }
         } else {
-          // Fallback using onboardingData presence
-          router.push(storedOnboarding ? "/dashboard" : "/onboarding")
+          // Fallback: if no user data but onboarding exists, go to dashboard
+          router.push(onboardingData ? "/dashboard" : "/onboarding")
         }
       } else {
         setError(result.error || "Login failed")
