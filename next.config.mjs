@@ -9,6 +9,11 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Explicitly disable lightningcss to avoid platform-specific native binary resolution issues during Vercel build
+  experimental: {
+    // If we later want the performance benefits, re-enable once Vercel env confirms proper optional deps
+    useLightningcss: false,
+  },
   async rewrites() {
     return [
       {
