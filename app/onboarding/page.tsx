@@ -28,6 +28,7 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import ProtectedRoute from "@/components/ProtectedRoute"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 interface OnboardingStep {
   id: string
@@ -429,6 +430,7 @@ export default function OnboardingPage() {
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({})
   const { user, updateUser } = useAuth()
   const router = useRouter()
+  const isMobile = useIsMobile()
 
   // If onboarding already completed, don't show the flow
   useEffect(() => {
@@ -546,25 +548,29 @@ export default function OnboardingPage() {
   return (
     <ProtectedRoute requireAuth={true} requireOnboarding={true}>
       <div className="min-h-screen bg-[#0e2439] flex flex-col relative overflow-hidden">
-        {/* Animated background particles */}
+        {/* Animated background particles - reduced on mobile for performance */}
         <div className="absolute inset-0">
           <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-cyan-400 rounded-full animate-pulse opacity-60"></div>
           <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-blue-400 rounded-full animate-pulse opacity-40"></div>
           <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-cyan-300 rounded-full animate-pulse opacity-50"></div>
-          <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-blue-300 rounded-full animate-pulse opacity-30"></div>
-          <div className="absolute bottom-1/3 left-1/4 w-1 h-1 bg-cyan-500 rounded-full animate-pulse opacity-70"></div>
+          {!isMobile && (
+            <>
+              <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-blue-300 rounded-full animate-pulse opacity-30"></div>
+              <div className="absolute bottom-1/3 left-1/4 w-1 h-1 bg-cyan-500 rounded-full animate-pulse opacity-70"></div>
+            </>
+          )}
         </div>
 
         {/* Progress bar */}
-        <div className="sticky top-0 z-10 p-6 glass-card border-b border-cyan-400/20 backdrop-blur-xl bg-[#0e2439]/80">
+        <div className="sticky top-0 z-10 p-4 sm:p-6 glass-card border-b border-cyan-400/20 backdrop-blur-xl bg-[#0e2439]/80">
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-cyan-300">
+              <span className="text-xs sm:text-sm text-cyan-300">
                 Step {currentStep + 1} of {onboardingSteps.length}
               </span>
-              <span className="text-sm text-cyan-300">{Math.round(progress)}% complete</span>
+              <span className="text-xs sm:text-sm text-cyan-300">{Math.round(progress)}% complete</span>
             </div>
-            <Progress value={progress} className="h-2 bg-[#0e2439]/50">
+            <Progress value={progress} className="h-2 sm:h-2 bg-[#0e2439]/50">
               <div 
                 className="h-2 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out rounded-full"
                 style={{ width: `${progress}%` }}
@@ -574,8 +580,8 @@ export default function OnboardingPage() {
         </div>
 
         {/* Main content */}
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="w-[40vw] max-w-2xl">
+        <div className="flex-1 flex items-center justify-center p-4 sm:p-6">
+          <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-2xl">
             <div
               className={`transition-all duration-500 ease-out ${
                 isAnimating ? "opacity-0 transform translate-y-8" : "opacity-100 transform translate-y-0"
@@ -583,32 +589,32 @@ export default function OnboardingPage() {
             >
               {currentStepData.type === "completion" ? (
                 // Completion step without card wrapper
-                <div className="space-y-8">
+                <div className="space-y-6 sm:space-y-8">
                   {/* Question */}
                   <div className="text-center">
-                    <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-4 tracking-wide">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-cyan-100 text-balance mb-3 sm:mb-4 tracking-wide px-2">
                       {currentStepData.title}
                     </h1>
                     {currentStepData.subtitle && (
-                      <p className="text-lg text-cyan-300/80 text-pretty max-w-lg mx-auto">
+                      <p className="text-base sm:text-lg text-cyan-300/80 text-pretty max-w-lg mx-auto px-4">
                         {currentStepData.subtitle}
                       </p>
                     )}
                   </div>
 
                   {/* Completion content */}
-                  <div className="text-center space-y-8">
+                  <div className="text-center space-y-6 sm:space-y-8">
                     {/* Glowing Circle with Text */}
                     <div className="relative">
-                      <div className="w-80 h-80 mx-auto relative">
+                      <div className="w-60 h-60 sm:w-80 sm:h-80 mx-auto relative">
                         {/* Glowing Outline Ring */}
                         <div className="absolute inset-0 rounded-full border-2 border-cyan-400 shadow-lg shadow-cyan-400/50 animate-pulse"></div>
                         
                         {/* Text */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center text-white">
-                            <div className="text-xl font-semibold mb-2">Analyzing your</div>
-                            <div className="text-xl font-semibold">profile with AI</div>
+                          <div className="text-center text-white px-4">
+                            <div className="text-lg sm:text-xl font-semibold mb-2">Analyzing your</div>
+                            <div className="text-lg sm:text-xl font-semibold">profile with AI</div>
                           </div>
                         </div>
                       </div>
@@ -617,17 +623,17 @@ export default function OnboardingPage() {
                 </div>
               ) : (
                 // Other steps with card wrapper
-                                 <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
-                   <GlassCardContent className="p-8">
-                                         {/* Step content */}
-                     <div className="space-y-6">
-                                             {/* Question */}
-                       <div className="text-center">
-                         <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-4 tracking-wide">
-                           {currentStepData.title}
-                         </h1>
+                <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
+                  <GlassCardContent className="p-4 sm:p-6 lg:p-8">
+                    {/* Step content */}
+                    <div className="space-y-4 sm:space-y-6">
+                      {/* Question */}
+                      <div className="text-center">
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-cyan-100 text-balance mb-3 sm:mb-4 tracking-wide px-2">
+                          {currentStepData.title}
+                        </h1>
                         {currentStepData.subtitle && (
-                          <p className="text-lg text-cyan-300/80 text-pretty max-w-lg mx-auto">
+                          <p className="text-sm sm:text-base lg:text-lg text-cyan-300/80 text-pretty max-w-lg mx-auto px-2">
                             {currentStepData.subtitle}
                           </p>
                         )}
@@ -635,27 +641,27 @@ export default function OnboardingPage() {
 
                       {/* Answer options */}
                       {(currentStepData.type === "select" || currentStepData.type === "multiselect") && (
-                        <div className="space-y-3">
+                        <div className="space-y-2 sm:space-y-3">
                           {currentStepData.options?.map((option) => {
                             const isSelected =
                               currentStepData.type === "multiselect"
                                 ? (currentValue as string[])?.includes(option)
                                 : currentValue === option
                             return (
-                                                             <button
-                                 key={option}
-                                 onClick={() => handleSelectOption(option)}
-                                 className={`w-full glass-card p-4 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
-                                   isSelected 
-                                     ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
-                                     : "border-cyan-400/30 hover:border-cyan-400/50"
-                                 }`}
-                               >
+                              <button
+                                key={option}
+                                onClick={() => handleSelectOption(option)}
+                                className={`w-full glass-card p-3 sm:p-4 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
+                                  isSelected 
+                                    ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
+                                    : "border-cyan-400/30 hover:border-cyan-400/50"
+                                }`}
+                              >
                                 <div className="flex items-center justify-between">
-                                  <span className="text-lg text-cyan-100 font-medium">{option}</span>
+                                  <span className="text-sm sm:text-base lg:text-lg text-cyan-100 font-medium pr-2">{option}</span>
                                   {isSelected && (
-                                    <div className="h-6 w-6 rounded-full bg-cyan-400 flex items-center justify-center">
-                                      <CheckCircle className="h-4 w-4 text-white" />
+                                    <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-cyan-400 flex items-center justify-center flex-shrink-0">
+                                      <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                                     </div>
                                   )}
                                 </div>
@@ -673,7 +679,7 @@ export default function OnboardingPage() {
                             value={(currentValue as string) || ""}
                             onChange={(e) => handleInputChange(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-lg h-14 text-left"
+                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg h-12 sm:h-14 text-left"
                             autoFocus
                           />
                         </div>
@@ -685,21 +691,21 @@ export default function OnboardingPage() {
                             placeholder={currentStepData.placeholder}
                             value={(currentValue as string) || ""}
                             onChange={(e) => handleInputChange(e.target.value)}
-                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-lg min-h-32 resize-none text-left"
+                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg min-h-24 sm:min-h-32 resize-none text-left"
                             autoFocus
                           />
                         </div>
                       )}
 
                       {currentStepData.type === "checkbox" && (
-                        <div className="flex items-center space-x-2 justify-center">
+                        <div className="flex items-center space-x-3 justify-center">
                           <Checkbox
                             id="permission"
                             checked={currentValue as boolean || false}
                             onCheckedChange={(checked) => handleInputChange(checked as boolean)}
-                            className="border-cyan-400/30 data-[state=checked]:bg-cyan-400 data-[state=checked]:border-cyan-400"
+                            className="border-cyan-400/30 data-[state=checked]:bg-cyan-400 data-[state=checked]:border-cyan-400 h-5 w-5 sm:h-6 sm:w-6"
                           />
-                          <Label htmlFor="permission" className="text-cyan-100 text-lg">
+                          <Label htmlFor="permission" className="text-cyan-100 text-sm sm:text-base lg:text-lg">
                             Yes, I give permission
                           </Label>
                         </div>
@@ -719,7 +725,7 @@ export default function OnboardingPage() {
                               onDragLeave={(e) => {
                                 e.preventDefault()
                               }}
-                              className="relative border-2 border-solid rounded-xl p-12 text-center transition-all duration-300 cursor-pointer bg-[#0e2439]/50 backdrop-blur-sm border-cyan-400 shadow-lg shadow-cyan-400/30 hover:border-cyan-400/50 hover:shadow-cyan-400/40"
+                              className="relative border-2 border-solid rounded-xl p-6 sm:p-8 lg:p-12 text-center transition-all duration-300 cursor-pointer bg-[#0e2439]/50 backdrop-blur-sm border-cyan-400 shadow-lg shadow-cyan-400/30 hover:border-cyan-400/50 hover:shadow-cyan-400/40"
                             >
                               <input
                                 type="file"
@@ -728,48 +734,48 @@ export default function OnboardingPage() {
                                 onChange={(e) => handleFileUpload(e.target.files)}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                               />
-                              <div className="space-y-6">
-                                <div className="mx-auto flex h-16 w-16 items-center justify-center">
-                                  <Upload className="h-8 w-8 text-white" />
+                              <div className="space-y-4 sm:space-y-6">
+                                <div className="mx-auto flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center">
+                                  <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                                 </div>
                                 <div>
-                                  <p className="text-xl font-medium text-white mb-2">Drag and drop your file here</p>
-                                  <p className="text-white">or click to browse</p>
-                                  <p className="text-cyan-300/80 mt-2">
+                                  <p className="text-lg sm:text-xl font-medium text-white mb-2">Drag and drop your file here</p>
+                                  <p className="text-sm sm:text-base text-white">or click to browse</p>
+                                  <p className="text-xs sm:text-sm text-cyan-300/80 mt-2">
                                     {currentStepData.fileTypes?.join(", ")} files accepted
                                   </p>
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <div className="space-y-6">
+                            <div className="space-y-4 sm:space-y-6">
                               {uploadedFiles[currentStepData.id].map((file, index) => (
-                                <div key={index} className="flex items-center gap-4 p-6 glass-card rounded-xl border border-cyan-400/20 bg-[#0e2439]/50 backdrop-blur-sm">
-                                  <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30">
-                                    <Upload className="h-8 w-8 text-cyan-400" />
+                                <div key={index} className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 glass-card rounded-xl border border-cyan-400/20 bg-[#0e2439]/50 backdrop-blur-sm">
+                                  <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 flex-shrink-0">
+                                    <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400" />
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-lg font-medium text-cyan-100 truncate">{file.name}</p>
-                                    <p className="text-cyan-300/80">{formatFileSize(file.size)}</p>
+                                    <p className="text-sm sm:text-base lg:text-lg font-medium text-cyan-100 truncate">{file.name}</p>
+                                    <p className="text-xs sm:text-sm text-cyan-300/80">{formatFileSize(file.size)}</p>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <CheckCircle className="h-6 w-6 text-green-400" />
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
                                     <button 
                                       onClick={() => removeFile(currentStepData.id, index)} 
                                       className="p-2 hover:bg-red-400/10 rounded-full transition-colors duration-300"
                                     >
-                                      <X className="h-5 w-5 text-red-400" />
+                                      <X className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" />
                                     </button>
                                   </div>
                                 </div>
                               ))}
                               <button
                                 onClick={() => setUploadedFiles(prev => ({ ...prev, [currentStepData.id]: [] }))}
-                                className="w-full p-4 border-2 border-dashed border-cyan-400/30 rounded-xl text-center transition-all duration-300 hover:border-cyan-400/50 hover:bg-cyan-400/5"
+                                className="w-full p-3 sm:p-4 border-2 border-dashed border-cyan-400/30 rounded-xl text-center transition-all duration-300 hover:border-cyan-400/50 hover:bg-cyan-400/5"
                               >
                                 <div className="space-y-2">
-                                  <Upload className="h-8 w-8 text-cyan-400 mx-auto" />
-                                  <p className="text-cyan-100">Add more files</p>
+                                  <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400 mx-auto" />
+                                  <p className="text-sm sm:text-base text-cyan-100">Add more files</p>
                                 </div>
                               </button>
                             </div>
@@ -784,24 +790,30 @@ export default function OnboardingPage() {
 
             {/* Navigation */}
             {currentStepData.type !== "completion" && (
-              <div className="flex items-center justify-between mt-8">
+              <div className="flex items-center justify-between mt-6 sm:mt-8 px-2">
                 <button
                   onClick={handlePrevious}
                   disabled={currentStep === 0}
-                  className="flex items-center gap-2 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-400/10 transition-all duration-300 px-4 py-2 rounded-md relative z-50"
+                  className="flex items-center gap-2 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-400/10 transition-all duration-300 px-3 sm:px-4 py-2 rounded-md relative z-50 text-sm sm:text-base"
                   style={{ position: 'relative', zIndex: 50 }}
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Previous
+                  <span className="hidden sm:inline">Previous</span>
+                  <span className="sm:hidden">Back</span>
                 </button>
 
                 <button 
                   onClick={handleNext} 
                   disabled={!isValid || isAnimating} 
-                  className="flex items-center gap-2 h-12 px-6 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold tracking-wide shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none rounded-md relative z-50"
+                  className="flex items-center gap-2 h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold tracking-wide shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none rounded-md relative z-50 text-sm sm:text-base"
                   style={{ position: 'relative', zIndex: 50 }}
                 >
-                  {currentStep === onboardingSteps.length - 2 ? "Complete" : "Next"}
+                  <span className="hidden sm:inline">
+                    {currentStep === onboardingSteps.length - 2 ? "Complete" : "Next"}
+                  </span>
+                  <span className="sm:hidden">
+                    {currentStep === onboardingSteps.length - 2 ? "Done" : "Next"}
+                  </span>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
