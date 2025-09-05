@@ -92,52 +92,57 @@ export default function DashboardPage() {
            </div>
 
            {/* Dashboard Content */}
-           <div className="flex-1 p-6 overflow-auto backdrop-blur-xl bg-[#0e2439]/40">
-             {/* Regenerate Button */}
-             <div className="flex justify-center mb-8">
-               <NeuroButton 
-                 className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-6 py-3 rounded-lg shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105"
-                 onClick={() => {
-                   // Add regenerate logic here
-                   console.log("Regenerating roadmap...")
-                 }}
-               >
-                 🔄 Regenerate Roadmap
-               </NeuroButton>
-             </div>
-             
-             {/* Timeline */}
-             <div className="flex justify-center pt-8">
-               <div className="relative max-w-4xl w-full">
-                 {/* Vertical Timeline Line */}
-                 <div className="absolute left-1/2 transform -translate-x-1/2 w-0.5 h-full bg-gradient-to-b from-cyan-400 to-cyan-600 shadow-lg shadow-cyan-400/50"></div>
+           <div className="flex-1 p-6 overflow-auto">
+             {/* Main Card Container */}
+             <div className="max-w-6xl mx-auto">
+               <div className="p-8 rounded-2xl backdrop-blur-xl bg-[#0e2439]/90 border border-cyan-400/30 shadow-2xl shadow-cyan-400/20">
+                 {/* Regenerate Button */}
+                 <div className="flex justify-center mb-12">
+                   <NeuroButton 
+                     className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold px-8 py-4 rounded-xl shadow-2xl shadow-cyan-500/40 hover:shadow-cyan-500/60 transition-all duration-300 transform hover:scale-105 border border-cyan-400/30"
+                     onClick={() => {
+                       // Add regenerate logic here
+                       console.log("Regenerating roadmap...")
+                     }}
+                   >
+                     🔄 Regenerate Roadmap
+                   </NeuroButton>
+                 </div>
                  
-                 {/* Timeline Steps */}
-                 <div className="space-y-12">
-                   {timelineSteps.map((step, index) => (
-                     <div key={step.id} className="relative">
-                       {/* Timeline Node */}
-                       <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 top-1/2 z-10">
-                         <div className="w-14 h-14 rounded-full flex items-center justify-center border-2 border-cyan-400 bg-cyan-400/20 shadow-lg shadow-cyan-400/50">
-                           <step.icon className="h-7 w-7 text-white" />
-                         </div>
-                       </div>
+                 {/* Timeline */}
+                 <div className="flex justify-center">
+                   <div className="relative max-w-4xl w-full">
+                     {/* Vertical Timeline Line */}
+                     <div className="absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-cyan-400 via-cyan-500 to-cyan-600 shadow-lg shadow-cyan-400/60 rounded-full"></div>
+                     
+                     {/* Timeline Steps */}
+                     <div className="space-y-16">
+                       {timelineSteps.map((step, index) => (
+                         <div key={step.id} className="relative">
+                           {/* Timeline Node */}
+                           <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 top-1/2 z-10">
+                             <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 border-cyan-400 bg-cyan-400/30 shadow-2xl shadow-cyan-400/60 hover:shadow-cyan-400/80 transition-all duration-300 hover:scale-110">
+                               <step.icon className="h-8 w-8 text-white" />
+                             </div>
+                           </div>
 
-                       {/* Content Card */}
-                       <div className={`w-5/12 ${index % 2 === 0 ? 'ml-auto' : 'mr-auto'}`}>
-                         <div className="p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20">
-                           <div className="space-y-4">
-                             <h3 className="text-xl font-bold text-white">
-                               {step.title}
-                             </h3>
-                             <p className="text-white/80 text-sm leading-relaxed">
-                               {step.description}
-                             </p>
+                           {/* Content Card */}
+                           <div className={`w-5/12 ${index % 2 === 0 ? 'ml-auto' : 'mr-auto'}`}>
+                             <div className="p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/50 shadow-xl shadow-cyan-400/20 hover:shadow-cyan-400/30 transition-all duration-300 hover:scale-105">
+                               <div className="space-y-4">
+                                 <h3 className="text-xl font-bold text-white">
+                                   {step.title}
+                                 </h3>
+                                 <p className="text-white/80 text-sm leading-relaxed">
+                                   {step.description}
+                                 </p>
+                               </div>
+                             </div>
                            </div>
                          </div>
-                       </div>
+                       ))}
                      </div>
-                   ))}
+                   </div>
                  </div>
                </div>
              </div>
