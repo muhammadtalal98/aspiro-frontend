@@ -97,6 +97,17 @@ export default function DashboardPage() {
                  </Link>
                ))}
              </nav>
+             
+             {/* Logout Button */}
+             <div className="p-2 border-t border-gray-700">
+               <button
+                 onClick={logout}
+                 className="w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-300 text-white/70 hover:text-white hover:bg-red-500/20 hover:border-red-500/30 border border-transparent"
+                 title="Logout"
+               >
+                 <LogOut className="h-5 w-5" />
+               </button>
+             </div>
            </div>
 
            {/* Dashboard Content */}
@@ -116,16 +127,6 @@ export default function DashboardPage() {
                    ))}
                  </nav>
 
-                 {/* Logout Button */}
-                 <div className="flex items-center">
-                   <NeuroButton
-                     onClick={logout}
-                     className="bg-[#0e2439]/80 border border-cyan-400/40 text-white font-semibold px-4 py-2 rounded-lg shadow-xl shadow-cyan-400/20 hover:shadow-cyan-400/30 transition-all duration-300 transform hover:scale-105 backdrop-blur-xl"
-                   >
-                     <LogOut className="h-4 w-4 mr-2" />
-                     Logout
-                   </NeuroButton>
-                 </div>
                </div>
              </div>
 
