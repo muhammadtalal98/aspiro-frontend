@@ -25,6 +25,7 @@ import {
   Clock,
 } from "lucide-react"
 import Link from "next/link"
+import AdminOnly from "../AdminOnly"
 
 const adminSidebarItems = [
   { icon: Square, label: "Dashboard", href: "/admin", number: "1" },
@@ -153,7 +154,8 @@ export default function ReportsManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0e2439] flex">
+    <AdminOnly>
+      <div className="min-h-screen bg-[#0e2439] flex">
       {/* Left Sidebar */}
       <div className="w-64 bg-[#0e2439]/80 backdrop-blur-xl border-r border-cyan-400/20 flex-shrink-0">
         <div className="p-6">
@@ -325,6 +327,7 @@ export default function ReportsManagement() {
           </GlassCardContent>
         </GlassCard>
       </div>
-    </div>
+      </div>
+    </AdminOnly>
   )
 }

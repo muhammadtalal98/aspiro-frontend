@@ -38,10 +38,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     const storedUser = localStorage.getItem("user")
     const storedToken = localStorage.getItem("token")
+  const storedOnboarding = localStorage.getItem("onboardingData") || sessionStorage.getItem("onboardingData")
     
     if (storedUser && storedToken) {
       try {
         const userData = JSON.parse(storedUser)
+        // If onboarding data exists locally, trust it as completed
+        if (!userData.hasCompletedOnboarding && storedOnboarding) {
+          try {
+            const ob = JSON.parse(storedOnboarding)
+            userData.hasCompletedOnboarding = true
+            // Prefer fullName from onboarding if present
+            if (!userData.fullName && ob?.fullName) {
+              userData.fullName = ob.fullName
+            }
+            localStorage.setItem("user", JSON.stringify(userData))
+          } catch {
+            // ignore malformed onboardingData
+          }
+        }
         setUser(userData)
       } catch (error) {
         console.error("Error parsing stored user data:", error)
@@ -54,30 +69,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+  const base = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/$/, '')
+      const response = await fetch(`${base}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           email,
           password,
         }),
       })
 
-      const data = await response.json()
+      let data: any = {}
+      try {
+        data = await response.json()
+      } catch {
+        // Non-JSON error (e.g., 403 HTML/text). Keep data as empty object.
+      }
 
       if (!response.ok) {
-        return { success: false, error: data.message || 'Login failed' }
+        const fallback = response.status === 403 ? 'Invalid email or password' : 'Login failed'
+        return { success: false, error: data.message || fallback }
       }
 
       if (data.success) {
+        // Try to preserve onboarding completion if backend doesn't send it
+        let previousOnboarding = false
+        try {
+          const prev = localStorage.getItem("user")
+          if (prev) previousOnboarding = !!JSON.parse(prev)?.hasCompletedOnboarding
+        } catch {}
+        // Also consider presence of onboardingData as completion
+        try {
+          if (!previousOnboarding) {
+            const ob = localStorage.getItem("onboardingData")
+            if (ob) previousOnboarding = true
+          }
+        } catch {}
         const newUser: User = {
           _id: data.user._id,
           email: data.user.email,
           fullName: data.user.fullName || email.split("@")[0],
           role: data.user.role || 'user',
-          hasCompletedOnboarding: false,
+          hasCompletedOnboarding: typeof data.user?.hasCompletedOnboarding === 'boolean'
+            ? data.user.hasCompletedOnboarding
+            : previousOnboarding,
         }
 
         setUser(newUser)
@@ -96,11 +134,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (fullName: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
+  const base = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/$/, '')
+      const response = await fetch(`${base}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           fullName,
           email,
@@ -108,10 +148,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       })
 
-      const data = await response.json()
+      let data: any = {}
+      try {
+        data = await response.json()
+      } catch {
+        // Non-JSON error body
+      }
 
       if (!response.ok) {
-        return { success: false, error: data.message || 'Registration failed' }
+        const fallback = response.status >= 400 && response.status < 500 ? 'Invalid input' : 'Registration failed'
+        return { success: false, error: data.message || fallback }
       }
 
       if (data.success) {
@@ -128,9 +174,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
+    // Preserve onboardingData in session, clear the rest
+    try {
+      const onboarding = localStorage.getItem("onboardingData")
+      if (onboarding) {
+        sessionStorage.setItem("onboardingData", onboarding)
+        localStorage.removeItem("onboardingData")
+      }
+    } catch {}
+
     setUser(null)
     localStorage.removeItem("user")
     localStorage.removeItem("token")
+  // Requirement: keep onboarding only in session; we already removed from local above.
     router.push("/login")
   }
 

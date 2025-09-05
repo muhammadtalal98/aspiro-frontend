@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "AI Career Path - Navigate Your Future in AI",
+  title: "Aspiro - Navigate Your Future in AI",
   description:
     "Discover your personalized AI career roadmap with expert guidance, skill assessments, and curated learning paths.",
     generator: 'v0.app'

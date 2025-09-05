@@ -301,7 +301,7 @@ export default function RoadmapPage() {
   }
 
   return (
-    <ProtectedRoute requireAuth={true} requireCV={true} requireOnboarding={true}>
+    <ProtectedRoute requireAuth={true} requireOnboarding={true}>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-6">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}

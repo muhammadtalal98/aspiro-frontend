@@ -13,7 +13,8 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5000/api/:path*',
+  // Use deployed backend (override via BACKEND_ORIGIN). Fallback keeps app working if env not set.
+  destination: `${process.env.BACKEND_ORIGIN || 'https://aspiro-backend-6e9g.onrender.com'}/api/:path*`,
       },
     ]
   },

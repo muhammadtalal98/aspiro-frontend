@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type React from "react"
 
 import { GlassCard, GlassCardContent } from "@/components/ui/glass-card"
@@ -430,6 +430,14 @@ export default function OnboardingPage() {
   const { user, updateUser } = useAuth()
   const router = useRouter()
 
+  // If onboarding already completed, don't show the flow
+  useEffect(() => {
+    const hasOnboarded = user?.hasCompletedOnboarding || (typeof window !== 'undefined' && (!!localStorage.getItem('onboardingData') || !!sessionStorage.getItem('onboardingData')))
+    if (hasOnboarded) {
+      router.replace('/dashboard')
+    }
+  }, [user, router])
+
   const progress = ((currentStep + 1) / onboardingSteps.length) * 100
 
   const handleNext = () => {
@@ -454,8 +462,8 @@ export default function OnboardingPage() {
             // Update user with name and completion status
             updateUser({ 
               hasCompletedOnboarding: true,
-              name: formData.fullName as string || user?.name || "User"
-            })
+              fullName: (formData.fullName as string) || user?.fullName || "User"
+            });
             router.push("/dashboard")
           }, 10000) // 10 seconds
         }
@@ -716,7 +724,7 @@ export default function OnboardingPage() {
                               <input
                                 type="file"
                                 accept={currentStepData.fileTypes?.join(",")}
-                                multiple={currentStepData.maxFiles && currentStepData.maxFiles > 1}
+                                multiple={Boolean(currentStepData.maxFiles && currentStepData.maxFiles > 1)}
                                 onChange={(e) => handleFileUpload(e.target.files)}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                               />

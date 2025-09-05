@@ -71,7 +71,7 @@ const howItWorksSteps: TimelineItem[] = [
     id: "3",
     title: "Get Your Roadmap",
     description:
-      "Receive a personalized AI career path with specific skills, courses, and milestones to achieve your goals.",
+      "Receive a personalized Aspiro with specific skills, courses, and milestones to achieve your goals.",
     status: "upcoming",
     date: "Step 3",
   },
@@ -92,11 +92,8 @@ export default function LandingPage() {
   useEffect(() => {
     if (!isLoading && user) {
       // Redirect authenticated users based on their progress
-      if (!user.hasCompletedOnboarding) {
-        router.push("/onboarding");
-      } else {
-        router.push("/dashboard");
-      }
+  const hasOnboarded = user.hasCompletedOnboarding || !!localStorage.getItem("onboardingData") || !!sessionStorage.getItem("onboardingData");
+  router.push(hasOnboarded ? "/dashboard" : "/onboarding");
     }
   }, [user, isLoading, router]);
 
@@ -259,7 +256,7 @@ export default function LandingPage() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                   <Brain className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="text-xl font-bold">AI Career Path</span>
+                <span className="text-xl font-bold">Aspiro</span>
               </div>
               <p className="text-muted-foreground text-pretty max-w-md">
                 Empowering professionals to navigate and excel in the rapidly
@@ -329,7 +326,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-8 pt-8 border-t border-border/50 text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 AI Career Path. All rights reserved.</p>
+            <p>&copy; 2024 Aspiro. All rights reserved.</p>
           </div>
         </div>
       </footer>

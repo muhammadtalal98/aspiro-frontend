@@ -22,7 +22,7 @@ export default function ProfilePage() {
   const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [profileData, setProfileData] = useState({
-    name: user?.name || "",
+    name: user?.fullName || "",
     email: user?.email || "",
     location: "San Francisco, CA",
     phone: "+1 (555) 123-4567",
@@ -41,7 +41,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <ProtectedRoute requireAuth={true} requireCV={true} requireOnboarding={true}>
+  <ProtectedRoute requireAuth={true} requireOnboarding={true}>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-6">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Header */}
@@ -77,10 +77,10 @@ export default function ProfilePage() {
               <GlassCard className="neuro">
                 <GlassCardContent className="p-6 text-center">
                   <Avatar className="h-24 w-24 mx-auto mb-4">
-                    <AvatarImage src="/placeholder-user.jpg" alt={user?.name} />
-                    <AvatarFallback className="text-2xl">{user?.name?.charAt(0)}</AvatarFallback>
+                    <AvatarImage src="/placeholder-user.jpg" alt={user?.fullName} />
+                    <AvatarFallback className="text-2xl">{user?.fullName?.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <h2 className="text-xl font-semibold mb-2">{user?.name}</h2>
+                  <h2 className="text-xl font-semibold mb-2">{user?.fullName}</h2>
                   <p className="text-muted-foreground mb-4">{user?.email}</p>
                   
                   <div className="space-y-3 text-left">

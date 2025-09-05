@@ -20,8 +20,8 @@ export default function SettingsPage() {
   const { user, logout } = useAuth()
   const [settings, setSettings] = useState({
     // Account settings
-    email: user?.email || "",
-    name: user?.name || "",
+  email: user?.email || "",
+  name: user?.fullName || "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
@@ -51,7 +51,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <ProtectedRoute requireAuth={true} requireCV={true} requireOnboarding={true}>
+    <ProtectedRoute requireAuth={true} requireOnboarding={true}>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-6">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Header */}
@@ -152,7 +152,7 @@ export default function SettingsPage() {
               </GlassCardHeader>
               <GlassCardContent>
                 <div className="text-center">
-                  <NeuroButton variant="destructive" onClick={handleDeleteAccount} className="flex items-center gap-2">
+                  <NeuroButton variant="outline" onClick={handleDeleteAccount} className="flex items-center gap-2 border-red-500/40 text-red-500 hover:bg-red-500/10">
                     <Trash2 className="h-4 w-4" />
                     Delete Account
                   </NeuroButton>

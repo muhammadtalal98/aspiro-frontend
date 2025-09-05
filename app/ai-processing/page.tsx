@@ -50,7 +50,7 @@ export default function AIProcessingPage() {
   }, [router])
 
   return (
-    <ProtectedRoute requireAuth={true} requireCV={true}>
+    <ProtectedRoute requireAuth={true}>
       <div className="min-h-screen bg-[#0e2439] flex items-center justify-center relative overflow-hidden">
         {/* Animated background particles */}
         <div className="absolute inset-0">

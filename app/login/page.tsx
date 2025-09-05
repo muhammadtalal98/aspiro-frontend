@@ -36,18 +36,20 @@ export default function LoginPage() {
     try {
       const result = await login(formData.email, formData.password)
       if (result.success) {
-        // Login successful, check user role for routing
-        const storedUser = localStorage.getItem("user")
+        // Login successful, check user role and onboarding state for routing
+  const storedUser = localStorage.getItem("user")
+  const storedOnboarding = localStorage.getItem("onboardingData") || sessionStorage.getItem("onboardingData")
         if (storedUser) {
           const userData = JSON.parse(storedUser)
           if (userData.role === "admin") {
             router.push("/admin")
           } else {
-            router.push("/onboarding")
+            const hasOnboarded = !!userData.hasCompletedOnboarding || !!storedOnboarding
+            router.push(hasOnboarded ? "/dashboard" : "/onboarding")
           }
         } else {
-          // Fallback to onboarding if user data is not available
-          router.push("/onboarding")
+          // Fallback using onboardingData presence
+          router.push(storedOnboarding ? "/dashboard" : "/onboarding")
         }
       } else {
         setError(result.error || "Login failed")
@@ -94,7 +96,7 @@ export default function LoginPage() {
             </div>
             <GlassCardTitle className="text-3xl font-bold text-cyan-100 tracking-wide">LOGIN</GlassCardTitle>
             <GlassCardDescription className="text-cyan-300/80 mt-2">
-              Sign in to your AI Career Path account
+              Sign in to your Aspirp account
             </GlassCardDescription>
             
 

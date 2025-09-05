@@ -8,12 +8,14 @@ interface ProtectedRouteProps {
   children: React.ReactNode
   requireAuth?: boolean
   requireOnboarding?: boolean
+  allowedRoles?: Array<'admin' | 'user'>
 }
 
 export default function ProtectedRoute({ 
   children, 
   requireAuth = true, 
-  requireOnboarding = false 
+  requireOnboarding = false,
+  allowedRoles,
 }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
@@ -26,12 +28,25 @@ export default function ProtectedRoute({
       return
     }
 
-    if (user && requireOnboarding && !user.hasCompletedOnboarding) {
+  // Consider onboarding complete if we have onboardingData in local or session storage
+  const hasOnboarded = user?.hasCompletedOnboarding || (typeof window !== 'undefined' && (!!localStorage.getItem('onboardingData') || !!sessionStorage.getItem('onboardingData')))
+
+  if (user && requireOnboarding && !hasOnboarded) {
       const currentPath = window.location.pathname
       if (currentPath !== "/onboarding") {
         router.push("/onboarding")
         return
       }
+    }
+
+    // Role based gating
+    if (user && allowedRoles && !allowedRoles.includes(user.role as 'admin' | 'user')) {
+      // Send to the correct home for their role
+      const target = user.role === 'admin' ? '/admin' : '/dashboard'
+      if (window.location.pathname !== target) {
+        router.replace(target)
+      }
+      return
     }
   }, [user, isLoading, requireAuth, requireOnboarding, router])
 
