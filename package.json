@@ -8,8 +8,7 @@
     "npm": ">=9"
   },
   "scripts": {
-  "build": "NEXT_DISABLE_LIGHTNINGCSS=1 next build",
-  "postinstall": "node scripts/patch-lightningcss.js || echo 'skip patch'",
+    "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -69,13 +68,12 @@
     "zod": "3.25.67"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.9",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "postcss": "^8.5",
-    "tailwindcss": "^4.1.9",
-    "tw-animate-css": "1.3.3",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "^5",
     "pnpm": "^9.12.0"
   }

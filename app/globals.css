@@ -1,7 +1,8 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@custom-variant dark (&:is(.dark *));
+/* Removed Tailwind v4 experimental @custom-variant usage; using .dark class strategy already present */
 
 :root {
   /* Modern dark UI color scheme - Navy Blue, Slate Gray, Bright Blue accents */
@@ -76,104 +77,23 @@
   --sidebar-ring: oklch(0.65 0.22 240 / 0.5);
 }
 
-@theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-}
-
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground antialiased;
-  }
+  * { @apply border-border; outline-color: var(--ring); }
+  body { @apply bg-background text-foreground antialiased; }
 
-  /* Updated glassmorphism utility classes for new color scheme */
-  .glass {
-    @apply backdrop-blur-md bg-white/5 border border-white/10;
-  }
+  /* Glassmorphism utilities */
+  .glass { @apply backdrop-blur-md bg-white/5 border border-white/10; }
+  .glass-card { @apply backdrop-blur-lg bg-white/5 border border-white/10 shadow-xl; }
+  .glass-strong { @apply backdrop-blur-xl bg-white/10 border border-white/20; }
 
-  .glass-card {
-    @apply backdrop-blur-lg bg-white/3 border border-white/8 shadow-xl;
-  }
+  /* Neumorphism (simplified for v3) */
+  .neuro { @apply shadow-inner; }
+  .neuro-inset { @apply shadow-inner; }
 
-  .glass-strong {
-    @apply backdrop-blur-xl bg-white/8 border border-white/15;
-  }
+  /* Smooth transitions */
+  .transition-smooth { @apply transition-all duration-300 ease-in-out; }
 
-  /* Updated neumorphism utility classes for new color scheme */
-  .neuro {
-    @apply shadow-[inset_0_2px_4px_rgba(255,255,255,0.05),0_8px_32px_rgba(0,0,0,0.4)];
-  }
-
-  .neuro-inset {
-    @apply shadow-[inset_0_4px_8px_rgba(0,0,0,0.4),inset_0_-2px_4px_rgba(255,255,255,0.05)];
-  }
-
-  /* Added smooth transitions for all interactive elements */
-  .transition-smooth {
-    @apply transition-all duration-300 ease-in-out;
-  }
-}
-
-/* Updated custom scrollbar styling for new dark theme */
-@layer utilities {
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: oklch(0.25 0.02 264) transparent;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: oklch(0.25 0.02 264);
-    border-radius: 3px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.35 0.02 264);
-  }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background-color: oklch(0.25 0.02 264); border-radius: 3px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background-color: oklch(0.35 0.02 264); }
 }
