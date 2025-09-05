@@ -1,0 +1,6 @@
+{
+  "name": "lightningcss",
+  "version": "0.0.0-stub",
+  "description": "Stub lightningcss to bypass native binary on Vercel",
+  "main": "node/index.js"
+}
