@@ -36,8 +36,19 @@ export default function LoginPage() {
     try {
       const result = await login(formData.email, formData.password)
       if (result.success) {
-        // Login successful, redirect to dashboard - ProtectedRoute will handle further routing
-        router.push("/dashboard")
+        // Login successful, check user role for routing
+        const storedUser = localStorage.getItem("user")
+        if (storedUser) {
+          const userData = JSON.parse(storedUser)
+          if (userData.role === "admin") {
+            router.push("/admin")
+          } else {
+            router.push("/onboarding")
+          }
+        } else {
+          // Fallback to onboarding if user data is not available
+          router.push("/onboarding")
+        }
       } else {
         setError(result.error || "Login failed")
       }

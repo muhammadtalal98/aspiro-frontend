@@ -28,7 +28,7 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   })
-  const { login } = useAuth()
+  const { register, login } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,12 +42,18 @@ export default function RegisterPage() {
     setError("")
 
     try {
-      // Simulate registration and auto-login
-      const result = await login(formData.email, formData.password)
-      if (result.success) {
-        router.push("/onboarding")
+      // First register the user
+      const registerResult = await register(formData.name, formData.email, formData.password)
+      if (registerResult.success) {
+        // After successful registration, automatically log in the user
+        const loginResult = await login(formData.email, formData.password)
+        if (loginResult.success) {
+          router.push("/onboarding")
+        } else {
+          setError(loginResult.error || "Registration successful but login failed. Please try logging in manually.")
+        }
       } else {
-        setError(result.error || "Registration failed")
+        setError(registerResult.error || "Registration failed")
       }
     } catch (err) {
       setError("An unexpected error occurred")
@@ -68,44 +74,49 @@ export default function RegisterPage() {
     formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-accent/20 blur-3xl" />
+    <div className="min-h-screen bg-[#0e2439] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background particles */}
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-cyan-400 rounded-full animate-pulse opacity-60"></div>
+        <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-blue-400 rounded-full animate-pulse opacity-40"></div>
+        <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-cyan-300 rounded-full animate-pulse opacity-50"></div>
+        <div className="absolute top-1/2 right-1/4 w-1 h-1 bg-blue-300 rounded-full animate-pulse opacity-30"></div>
+        <div className="absolute bottom-1/3 left-1/4 w-1 h-1 bg-cyan-500 rounded-full animate-pulse opacity-70"></div>
       </div>
 
       <div className="relative w-full max-w-md">
         {/* Back to home link */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-smooth mb-8"
+          className="inline-flex items-center gap-2 text-sm text-cyan-300 hover:text-cyan-100 transition-all duration-300 mb-8 group"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform duration-300" />
           Back to Home
         </Link>
 
-        <GlassCard className="neuro">
-          <GlassCardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Brain className="h-6 w-6 text-primary" />
+        <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
+          <GlassCardHeader className="text-center pb-8">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 shadow-lg shadow-cyan-500/20">
+              <Brain className="h-8 w-8 text-cyan-400" />
             </div>
-            <GlassCardTitle className="text-2xl">Create Account</GlassCardTitle>
-            <GlassCardDescription>Start your AI career journey today</GlassCardDescription>
+            <GlassCardTitle className="text-3xl font-bold text-cyan-100 tracking-wide">REGISTER</GlassCardTitle>
+            <GlassCardDescription className="text-cyan-300/80 mt-2">
+              Start your AI career journey today
+            </GlassCardDescription>
             
 
           </GlassCardHeader>
 
-          <GlassCardContent>
+          <GlassCardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="flex items-center gap-2 p-3 glass-card border border-red-500/20 bg-red-500/10 rounded-lg">
-                  <AlertCircle className="h-4 w-4 text-red-500" />
-                  <span className="text-sm text-red-500">{error}</span>
+                <div className="flex items-center gap-3 p-4 glass-card border border-red-400/30 bg-red-400/10 rounded-xl backdrop-blur-sm">
+                  <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
+                  <span className="text-sm text-red-300">{error}</span>
                 </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+              <div className="space-y-3">
+                <Label htmlFor="name" className="text-cyan-100 font-medium">Full Name</Label>
                 <Input
                   id="name"
                   name="name"
@@ -114,12 +125,12 @@ export default function RegisterPage() {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  className="glass-card border-white/20 focus:border-primary/50 transition-smooth"
+                  className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-cyan-100 font-medium">Email</Label>
                 <Input
                   id="email"
                   name="email"
@@ -128,12 +139,12 @@ export default function RegisterPage() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="glass-card border-white/20 focus:border-primary/50 transition-smooth"
+                  className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+              <div className="space-y-3">
+                <Label htmlFor="password" className="text-cyan-100 font-medium">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -143,20 +154,20 @@ export default function RegisterPage() {
                     value={formData.password}
                     onChange={handleInputChange}
                     required
-                    className="glass-card border-white/20 focus:border-primary/50 transition-smooth pr-10"
+                    className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 h-12 pr-12"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-smooth"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-300 hover:text-cyan-100 transition-colors duration-300"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="space-y-3">
+                <Label htmlFor="confirmPassword" className="text-cyan-100 font-medium">Confirm Password</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
@@ -166,51 +177,55 @@ export default function RegisterPage() {
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     required
-                    className={`glass-card transition-smooth pr-10 ${
+                    className={`glass-card transition-all duration-300 h-12 pr-12 ${
                       passwordsMatch
-                        ? "border-green-500/50 focus:border-green-500"
+                        ? "border-green-400/50 focus:border-green-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 focus:ring-2 focus:ring-green-400/20"
                         : passwordsDontMatch
-                          ? "border-red-500/50 focus:border-red-500"
-                          : "border-white/20 focus:border-primary/50"
+                          ? "border-red-400/50 focus:border-red-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 focus:ring-2 focus:ring-red-400/20"
+                          : "border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 focus:ring-2 focus:ring-cyan-400/20"
                     }`}
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    {passwordsMatch && <Check className="h-4 w-4 text-green-500" />}
-                    {passwordsDontMatch && <X className="h-4 w-4 text-red-500" />}
+                    {passwordsMatch && <Check className="h-5 w-5 text-green-400" />}
+                    {passwordsDontMatch && <X className="h-5 w-5 text-red-400" />}
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="text-muted-foreground hover:text-foreground transition-smooth"
+                      className="text-cyan-300 hover:text-cyan-100 transition-colors duration-300"
                     >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
                 </div>
-                {passwordsDontMatch && <p className="text-sm text-red-500">Passwords don't match</p>}
+                {passwordsDontMatch && <p className="text-sm text-red-400">Passwords don't match</p>}
               </div>
 
-              <NeuroButton type="submit" className="w-full" size="lg" disabled={passwordsDontMatch || isLoading}>
-                {isLoading ? "Creating Account..." : "Create Account"}
+              <NeuroButton 
+                type="submit" 
+                className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold tracking-wide shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105" 
+                disabled={passwordsDontMatch || isLoading}
+              >
+                {isLoading ? "Creating Account..." : "CREATE ACCOUNT"}
               </NeuroButton>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
+            <div className="text-center pt-4 border-t border-cyan-400/20">
+              <p className="text-sm text-cyan-300/80">
                 Already have an account?{" "}
-                <Link href="/login" className="text-primary hover:text-primary/80 transition-smooth font-medium">
+                <Link href="/login" className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300 font-medium">
                   Sign in
                 </Link>
               </p>
             </div>
 
-            <div className="mt-4 text-center">
-              <p className="text-xs text-muted-foreground">
+            <div className="text-center pt-2">
+              <p className="text-xs text-cyan-300/60">
                 By creating an account, you agree to our{" "}
-                <Link href="/terms" className="text-primary hover:text-primary/80 transition-smooth">
+                <Link href="/terms" className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300">
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="text-primary hover:text-primary/80 transition-smooth">
+                <Link href="/privacy" className="text-cyan-400 hover:text-cyan-300 transition-colors duration-300">
                   Privacy Policy
                 </Link>
               </p>
