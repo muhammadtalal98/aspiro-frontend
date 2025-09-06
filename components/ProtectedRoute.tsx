@@ -28,27 +28,38 @@ export default function ProtectedRoute({
       return
     }
 
-  // Consider onboarding complete if we have onboardingData in local or session storage
-  const hasOnboarded = user?.hasCompletedOnboarding || (typeof window !== 'undefined' && (!!localStorage.getItem('onboardingData') || !!sessionStorage.getItem('onboardingData')))
+    if (!user) return
 
-  if (user && requireOnboarding && !hasOnboarded) {
-      const currentPath = window.location.pathname
-      if (currentPath !== "/onboarding") {
-        router.push("/onboarding")
+    // Fast-exit logic for admin: never require onboarding, and redirect away from onboarding page
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''
+    if (user.role === 'admin') {
+      if (currentPath === '/onboarding') {
+        router.replace('/admin')
+        return
+      }
+      // If an admin lands on a user-only path that enforces allowedRoles and they aren't allowed, role gating below will handle.
+    }
+
+    // Consider onboarding complete if we have onboardingData in local or session storage (only relevant for user role)
+    const hasOnboarded = user.role === 'user' && (user.hasCompletedOnboarding || (typeof window !== 'undefined' && (!!localStorage.getItem('onboardingData') || !!sessionStorage.getItem('onboardingData'))))
+
+    // Onboarding gating for normal users only
+    if (user.role === 'user' && requireOnboarding && !hasOnboarded) {
+      if (currentPath !== '/onboarding') {
+        router.push('/onboarding')
         return
       }
     }
 
-    // Role based gating
-    if (user && allowedRoles && !allowedRoles.includes(user.role as 'admin' | 'user')) {
-      // Send to the correct home for their role
+    // Role based gating (after onboarding check to avoid flicker)
+    if (allowedRoles && !allowedRoles.includes(user.role as 'admin' | 'user')) {
       const target = user.role === 'admin' ? '/admin' : '/dashboard'
-      if (window.location.pathname !== target) {
+      if (currentPath !== target) {
         router.replace(target)
       }
       return
     }
-  }, [user, isLoading, requireAuth, requireOnboarding, router])
+  }, [user, isLoading, requireAuth, requireOnboarding, router, allowedRoles])
 
   if (isLoading) {
     return (

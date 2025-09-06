@@ -432,9 +432,14 @@ export default function OnboardingPage() {
   const router = useRouter()
   const isMobile = useIsMobile()
 
-  // If onboarding already completed, don't show the flow
+  // If onboarding already completed (for users) or role is admin, redirect appropriately
   useEffect(() => {
-    const hasOnboarded = user?.hasCompletedOnboarding || (typeof window !== 'undefined' && (!!localStorage.getItem('onboardingData') || !!sessionStorage.getItem('onboardingData')))
+    if (!user) return
+    if (user.role === 'admin') {
+      router.replace('/admin')
+      return
+    }
+    const hasOnboarded = user.hasCompletedOnboarding || (typeof window !== 'undefined' && (!!localStorage.getItem('onboardingData') || !!sessionStorage.getItem('onboardingData')))
     if (hasOnboarded) {
       router.replace('/dashboard')
     }

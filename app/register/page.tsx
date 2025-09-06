@@ -48,9 +48,24 @@ export default function RegisterPage() {
         // After successful registration, automatically log in the user
         const loginResult = await login(formData.email, formData.password)
         if (loginResult.success) {
-          router.push("/onboarding")
+          try {
+            const storedUser = localStorage.getItem('user')
+            if (storedUser) {
+              const userData = JSON.parse(storedUser)
+              if (userData.role === 'admin') {
+                router.push('/admin')
+              } else {
+                router.push('/onboarding')
+              }
+            } else {
+              router.push('/onboarding')
+            }
+          } catch {
+            router.push('/onboarding')
+          }
         } else {
-          setError(loginResult.error || "Registration successful but login failed. Please try logging in manually.")
+          setError(loginResult.error || "Registration successful but login failed. Please login.")
+          router.push("/login")
         }
       } else {
         setError(registerResult.error || "Registration failed")
