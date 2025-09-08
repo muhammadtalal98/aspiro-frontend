@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, BookOpen, Users2, User, FileText, LogOut, X, Menu } from 'lucide-react'
+import { BarChart3, BookOpen, Users2, User, FileText, HelpCircle, LogOut, X, Menu } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 
 interface NavItem {
@@ -17,6 +17,7 @@ const sidebarItems = [
   { icon: BookOpen, label: "Courses", href: "/admin/courses" },
   { icon: Users2, label: "Majors", href: "/admin/majors" },
   { icon: User, label: "Users", href: "/admin/users" },
+  { icon: HelpCircle, label: "Questions", href: "/admin/questions" },
   // { icon: FileText, label: "Questionnaires", href: "/admin/questionnaires" },
   // { icon: BarChart3, label: "Reports", href: "/admin/reports" },
 ]
