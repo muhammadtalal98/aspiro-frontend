@@ -1,6 +1,7 @@
 "use client"
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import { getApiUrl } from "./api-config"
 
 interface User {
   _id: string
@@ -20,6 +21,7 @@ interface AuthContextType {
   checkAuth: () => void
   resetUserProgress: () => void
   getAuthHeaders: () => { Authorization: string } | {}
+  getToken: () => string | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -69,8 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-  const base = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/$/, '')
-      const response = await fetch(`${base}/auth/login`, {
+      const response = await fetch(getApiUrl('/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,8 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (fullName: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-  const base = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/$/, '')
-      const response = await fetch(`${base}/auth/register`, {
+      const response = await fetch(getApiUrl('/auth/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -214,8 +214,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {}
   }
 
+  const getToken = () => {
+    return localStorage.getItem("token")
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUser, checkAuth, resetUserProgress, getAuthHeaders }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, updateUser, checkAuth, resetUserProgress, getAuthHeaders, getToken }}>
       {children}
     </AuthContext.Provider>
   )

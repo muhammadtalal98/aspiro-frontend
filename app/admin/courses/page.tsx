@@ -32,6 +32,7 @@ import { AdminSidebar } from "@/components/admin-sidebar"
 import { Textarea } from "@/components/ui/textarea"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { useToast } from "@/hooks/use-toast"
+import { getApiUrl } from "@/lib/api-config"
 
 const adminSidebarItems = [
  { icon: BarChart3, label: "Dashboard", href: "/admin", number: "1" },
@@ -93,8 +94,6 @@ export default function CoursesManagement() {
   const [isSaving, setIsSaving] = useState(false)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
-  const base = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/$/, '')
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -131,7 +130,7 @@ export default function CoursesManagement() {
     try {
       if (!isLoading) setIsFetching(true)
       const query = buildQuery()
-      const res = await fetch(`${base}/admin/courses${query ? `?${query}` : ''}`, {
+      const res = await fetch(getApiUrl(`/admin/courses${query ? `?${query}` : ''}`), {
         headers: { 'Content-Type': 'application/json', ...(getAuthHeaders() as Record<string,string>) },
         credentials: 'include'
       })
@@ -162,7 +161,7 @@ export default function CoursesManagement() {
     const loadMajors = async () => {
       try {
         setIsMajorsLoading(true)
-        const res = await fetch(`${base}/admin/majors?limit=200&status=active`, {
+        const res = await fetch(getApiUrl('/admin/majors?limit=200&status=active'), {
           headers: { 'Content-Type': 'application/json', ...(getAuthHeaders() as Record<string,string>) },
           credentials: 'include'
         })
@@ -194,7 +193,7 @@ export default function CoursesManagement() {
     setIsSaving(true)
     try {
       const payload = { ...addForm, durationWeeks: Number(addForm.durationWeeks), price: Number(addForm.price) }
-      const res = await fetch(`${base}/admin/courses`, {
+      const res = await fetch(getApiUrl('/admin/courses'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(getAuthHeaders() as Record<string,string>) },
         credentials: 'include',
@@ -226,7 +225,7 @@ export default function CoursesManagement() {
     try {
       const payload: any = { ...editForm }
       delete payload.students
-      const res = await fetch(`${base}/admin/courses/${selectedCourse._id}`, {
+      const res = await fetch(getApiUrl(`/admin/courses/${selectedCourse._id}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...(getAuthHeaders() as Record<string,string>) },
         credentials: 'include',
@@ -245,7 +244,7 @@ export default function CoursesManagement() {
   const handleDelete = async () => {
     if (!pendingDeleteId) return
     try {
-      const res = await fetch(`${base}/admin/courses/${pendingDeleteId}`, {
+      const res = await fetch(getApiUrl(`/admin/courses/${pendingDeleteId}`), {
         method: 'DELETE',
         headers: { ...(getAuthHeaders() as Record<string,string>) },
         credentials: 'include'

@@ -1,11 +1,9 @@
 import { NextRequest } from 'next/server'
-
-// Default to deployed backend; can be overridden locally via BACKEND_ORIGIN env var
-const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN || 'https://aspiro-backend-6e9g.onrender.com'
+import { getBackendApiUrl } from '@/lib/api-config'
 
 async function proxy(req: NextRequest, { params }: { params: { path: string[] } }) {
   const subpath = (params?.path || []).join('/')
-  const url = `${BACKEND_ORIGIN.replace(/\/$/, '')}/api/auth/${subpath}`
+  const url = getBackendApiUrl(`/auth/${subpath}`)
 
   // Clone headers and strip problematic ones for origin checks
   const headers = new Headers(req.headers)

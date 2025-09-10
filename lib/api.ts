@@ -1,6 +1,5 @@
 // API utility functions for making authenticated requests
-
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/$/, '')
+import { getApiUrl, API_CONFIG } from './api-config'
 
 export interface ApiResponse<T = any> {
   success: boolean
@@ -20,11 +19,10 @@ export async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-  const url = `${API_BASE_URL}${path}`
+  const url = getApiUrl(endpoint)
   
   const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...API_CONFIG.DEFAULT_HEADERS,
   }
 
   // Add authorization header if token exists

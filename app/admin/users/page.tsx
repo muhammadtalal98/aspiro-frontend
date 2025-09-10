@@ -28,6 +28,7 @@ import { AdminSidebar } from "@/components/admin-sidebar"
 import { useAuth } from "@/lib/auth-context"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { useToast } from "@/hooks/use-toast"
+import { getApiUrl } from "@/lib/api-config"
 
 const adminSidebarItems = [
   { icon: BarChart3, label: "Dashboard", href: "/admin", number: "1" },
@@ -75,8 +76,6 @@ export default function UsersManagement() {
   })
   const [isSaving, setIsSaving] = useState(false)
 
-  const base = (process.env.NEXT_PUBLIC_API_URL || "/api").replace(/\/$/, "")
-
   const getRoleColor = (role: string) => {
     switch (role) {
       case "admin":
@@ -89,7 +88,7 @@ export default function UsersManagement() {
   const loadUsers = async () => {
     try {
       setIsFetching(true)
-      const res = await fetch(`${base}/admin/users`, {
+      const res = await fetch(getApiUrl('/admin/users'), {
         headers: {
           "Content-Type": "application/json",
           ...(getAuthHeaders() as Record<string, string>),
@@ -129,7 +128,7 @@ export default function UsersManagement() {
   const handleAdd = async () => {
     setIsSaving(true)
     try {
-      const res = await fetch(`${base}/admin/users`, {
+      const res = await fetch(getApiUrl('/admin/users'), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -163,7 +162,7 @@ export default function UsersManagement() {
     const payload: any = { fullName: editForm.fullName, email: editForm.email, role: editForm.role }
     if (editForm.password) payload.password = editForm.password
     try {
-      const res = await fetch(`${base}/admin/users/${selectedUser._id}`, {
+      const res = await fetch(getApiUrl(`/admin/users/${selectedUser._id}`), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -187,7 +186,7 @@ export default function UsersManagement() {
   const handleDelete = async () => {
     if (!pendingDeleteId) return
     try {
-      const res = await fetch(`${base}/admin/users/${pendingDeleteId}`, {
+      const res = await fetch(getApiUrl(`/admin/users/${pendingDeleteId}`), {
         method: "DELETE",
         headers: {
           ...(getAuthHeaders() as Record<string, string>),
