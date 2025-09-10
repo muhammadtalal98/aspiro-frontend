@@ -8,6 +8,7 @@ import AdminOnly from "./AdminOnly"
 import { useToast } from "@/hooks/use-toast"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { AdminSidebar } from "@/components/admin-sidebar"
+import { getApiUrl } from "@/lib/api-config"
 
 // Sidebar items now centralized in AdminSidebar component
 
@@ -35,12 +36,10 @@ export default function AdminDashboardPage() {
   const [isLoadingCourses, setIsLoadingCourses] = useState(true)
   const [isLoadingMajors, setIsLoadingMajors] = useState(true)
 
-  const base = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/$/, '')
-
   const loadCourses = async () => {
     try {
       setIsLoadingCourses(true)
-      const res = await fetch(`${base}/admin/courses?limit=25&status=active`, {
+      const res = await fetch(getApiUrl('/admin/courses?limit=25&status=active'), {
         headers: { 'Content-Type': 'application/json', ...(getAuthHeaders() as Record<string,string>) },
         credentials: 'include'
       })
@@ -62,7 +61,7 @@ export default function AdminDashboardPage() {
   const loadMajors = async () => {
     try {
       setIsLoadingMajors(true)
-      const res = await fetch(`${base}/admin/majors?limit=100&status=active`, {
+      const res = await fetch(getApiUrl('/admin/majors?limit=100&status=active'), {
         headers: { 'Content-Type': 'application/json', ...(getAuthHeaders() as Record<string,string>) },
         credentials: 'include'
       })

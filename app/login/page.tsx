@@ -28,6 +28,12 @@ export default function LoginPage() {
   const { login } = useAuth()
   const router = useRouter()
 
+  const clearOnboardingData = () => {
+    localStorage.removeItem("onboardingData")
+    sessionStorage.removeItem("onboardingData")
+    console.log("Cleared onboarding data from storage")
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -38,6 +44,14 @@ export default function LoginPage() {
       if (result.success) {
         const storedUser = localStorage.getItem("user")
         const onboardingStorage = localStorage.getItem("onboardingData") || sessionStorage.getItem("onboardingData")
+        
+        // Debug logging
+        console.log("Login redirect debug:", {
+          storedUser: storedUser ? JSON.parse(storedUser) : null,
+          onboardingStorage: !!onboardingStorage,
+          hasOnboardingData: !!onboardingStorage
+        })
+        
         if (storedUser) {
           try {
             const userData = JSON.parse(storedUser)
@@ -47,6 +61,12 @@ export default function LoginPage() {
               return
             }
             const completed = !!userData.hasCompletedOnboarding || !!onboardingStorage
+            console.log("Redirect decision:", {
+              hasCompletedOnboarding: userData.hasCompletedOnboarding,
+              hasOnboardingStorage: !!onboardingStorage,
+              completed: completed,
+              redirectTo: completed ? '/dashboard' : '/onboarding'
+            })
             router.push(completed ? '/dashboard' : '/onboarding')
             return
           } catch {
@@ -171,6 +191,17 @@ export default function LoginPage() {
                 {isLoading ? "Signing In..." : "LOG IN"}
               </NeuroButton>
             </form>
+
+            {/* Debug button for testing */}
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={clearOnboardingData}
+                className="text-xs text-red-400 hover:text-red-300 transition-colors duration-300 underline"
+              >
+                Clear Onboarding Data (Debug)
+              </button>
+            </div>
 
             <div className="text-center pt-4 border-t border-cyan-400/20">
               <p className="text-sm text-cyan-300/80">

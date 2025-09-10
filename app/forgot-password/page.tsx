@@ -14,6 +14,7 @@ import { NeuroButton } from "@/components/ui/neuro-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Brain, ArrowLeft, Mail, ShieldCheck, Eye, EyeOff, RefreshCw, AlertCircle } from "lucide-react"
+import { getApiUrl } from "@/lib/api-config"
 
 export default function ForgotPasswordPage() {
   // Steps: request -> verify -> success
@@ -25,7 +26,6 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
-  const base = (process.env.NEXT_PUBLIC_API_URL || '/api').replace(/\/$/, '')
 
   const requestOtp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,7 +33,7 @@ export default function ForgotPasswordPage() {
     setError('')
     setInfo('')
     try {
-      const res = await fetch(`${base}/auth/forgot-password`, {
+      const res = await fetch(getApiUrl('/auth/forgot-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
         setIsLoading(false)
         return
       }
-      const res = await fetch(`${base}/auth/reset-password`, {
+      const res = await fetch(getApiUrl('/auth/reset-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp, newPassword })
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
     setError('')
     try {
-      const res = await fetch(`${base}/auth/forgot-password`, {
+      const res = await fetch(getApiUrl('/auth/forgot-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })

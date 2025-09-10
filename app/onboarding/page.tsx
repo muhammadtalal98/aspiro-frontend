@@ -23,414 +23,73 @@ import {
   Upload,
   CheckCircle,
   Brain,
-  X
+  X,
+  Loader2
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
 import ProtectedRoute from "@/components/ProtectedRoute"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { fetchQuestions } from "@/lib/questions-api"
+import { transformQuestionsToSteps, OnboardingStep } from "@/lib/question-transformer"
+import { saveUserResponses, UserResponse } from "@/lib/user-response-api"
 
-interface OnboardingStep {
-  id: string
-  title: string
-  subtitle: string
-  icon: React.ElementType
-  type: "text" | "textarea" | "select" | "multiselect" | "file" | "checkbox" | "completion"
-  options?: string[]
-  placeholder?: string
-  required?: boolean
-  fileTypes?: string[]
-  maxFiles?: number
-}
-
-const onboardingSteps: OnboardingStep[] = [
-  // Step 1: Basic Information
-  {
-    id: "fullName",
-    title: "What's your full name?",
-    subtitle: "Let's start with the basics. We'll use this to personalize your experience.",
-    icon: Users,
-    type: "text",
-    placeholder: "Enter your full name",
-    required: true,
-  },
-  // Step 2: Academic Background
-  {
-    id: "studyLevel",
-    title: "What is your current level of study?",
-    subtitle: "This helps us understand your educational context",
-    icon: GraduationCap,
-    type: "select",
-    options: ["High School", "Undergraduate", "Postgraduate", "Graduate", "Other"],
-    required: true,
-  },
-  {
-    id: "major",
-    title: "What is your major or field of study?",
-    subtitle: "Tell us about your academic focus",
-    icon: BookOpen,
-    type: "text",
-    placeholder: "e.g., Computer Science, Business Administration, Engineering",
-    required: true,
-  },
-  {
-    id: "enjoyedSubjects",
-    title: "Which subjects or courses do you enjoy the most?",
-    subtitle: "This helps us identify your interests and strengths",
-    icon: Heart,
-    type: "textarea",
-    placeholder: "Describe the subjects or courses that excite you the most...",
-    required: true,
-  },
-  {
-    id: "continueStudies",
-    title: "Do you plan to continue your studies after your current program?",
-    subtitle: "e.g., master's, PhD, or other advanced degrees",
-    icon: GraduationCap,
-    type: "select",
-    options: ["Yes, definitely", "Maybe, I'm considering it", "No, I plan to work", "I'm not sure yet"],
-    required: true,
-  },
-
-  // Step 2: Career Aspirations
-  {
-    id: "dreamJob",
-    title: "What is your dream job or role?",
-    subtitle: "Be specific about the position you aspire to",
-    icon: Target,
-    type: "text",
-    placeholder: "e.g., Software Engineer, Data Scientist, Product Manager",
-    required: true,
-  },
-  {
-    id: "interestedIndustries",
-    title: "Which industries or fields interest you the most?",
-    subtitle: "Select all that apply",
-    icon: Briefcase,
-    type: "multiselect",
-    options: [
-      "Technology/Software",
-      "Healthcare",
-      "Finance/Banking",
-      "Education",
-      "Manufacturing",
-      "Retail/E-commerce",
-      "Media/Entertainment",
-      "Government/Public Sector",
-      "Non-profit/Social Impact",
-      "Consulting",
-      "Research/Academia",
-      "Startups/Entrepreneurship",
-      "Other"
-    ],
-    required: true,
-  },
-  {
-    id: "careerPath",
-    title: "Do you prefer a research, technical, creative, or business-oriented career path?",
-    subtitle: "Choose the path that best describes your interests",
-    icon: Target,
-    type: "select",
-    options: ["Research-oriented", "Technical", "Creative", "Business-oriented", "Mixed/Combination"],
-    required: true,
-  },
-  {
-    id: "entrepreneurship",
-    title: "Are you considering entrepreneurship or starting your own business in the future?",
-    subtitle: "This helps us understand your long-term goals",
-    icon: Briefcase,
-    type: "select",
-    options: ["Yes, definitely", "Maybe, I'm interested", "No, I prefer employment", "I'm not sure"],
-    required: true,
-  },
-
-  // Step 3: Skills & Strengths
-  {
-    id: "confidentSkills",
-    title: "What skills do you feel most confident in?",
-    subtitle: "List the skills you're good at or have experience with",
-    icon: Zap,
-    type: "textarea",
-    placeholder: "e.g., Programming, Communication, Problem-solving, Leadership...",
-    required: true,
-  },
-  {
-    id: "developSkills",
-    title: "What skills would you like to develop further?",
-    subtitle: "Identify areas for growth and improvement",
-    icon: Zap,
-    type: "textarea",
-    placeholder: "e.g., Public speaking, Technical skills, Project management...",
-    required: true,
-  },
-  {
-    id: "projectsExperience",
-    title: "Have you completed any projects, internships, or volunteering related to your field?",
-    subtitle: "Tell us about your practical experience",
-    icon: Briefcase,
-    type: "textarea",
-    placeholder: "Describe any relevant projects, internships, or volunteer work...",
-    required: false,
-  },
-
-  // Step 4: Learning & Development Preferences
-  {
-    id: "learningPreference",
-    title: "How do you prefer to learn outside of school?",
-    subtitle: "Select all that apply",
-    icon: BookOpen,
-    type: "multiselect",
-    options: [
-      "Online courses (Coursera, Udemy, etc.)",
-      "Workshops and seminars",
-      "Hands-on projects",
-      "Mentorship programs",
-      "Reading books and articles",
-      "Podcasts and videos",
-      "Networking events",
-      "Competitions and hackathons",
-      "Other"
-    ],
-    required: true,
-  },
-  {
-    id: "weeklyLearningTime",
-    title: "How much time can you dedicate weekly to learning new skills?",
-    subtitle: "Be realistic about your availability",
-    icon: Clock,
-    type: "select",
-    options: ["1-2 hours", "3-5 hours", "6-10 hours", "10+ hours", "Varies significantly"],
-    required: true,
-  },
-  {
-    id: "extracurricularInterest",
-    title: "Are you interested in extracurricular activities, student clubs, or competitions to build experience?",
-    subtitle: "This helps us suggest relevant opportunities",
-    icon: Users,
-    type: "select",
-    options: ["Yes, very interested", "Somewhat interested", "Not really", "I'm not sure"],
-    required: true,
-  },
-
-  // Step 5: Timeline & Goals
-  {
-    id: "graduationDate",
-    title: "When do you expect to graduate?",
-    subtitle: "This helps us plan your career timeline",
-    icon: Clock,
-    type: "select",
-    options: [
-      "Within 6 months",
-      "6-12 months",
-      "1-2 years",
-      "2-3 years",
-      "3+ years",
-      "Already graduated",
-      "Not currently studying"
-    ],
-    required: true,
-  },
-  {
-    id: "workAfterGraduation",
-    title: "Do you plan to work immediately after graduation?",
-    subtitle: "Yes/No",
-    icon: Briefcase,
-    type: "select",
-    options: ["Yes", "No", "I'm not sure"],
-    required: true,
-  },
-  {
-    id: "shortTermGoal",
-    title: "What is your short-term goal (1–2 years)?",
-    subtitle: "Be specific about what you want to achieve",
-    icon: Target,
-    type: "textarea",
-    placeholder: "e.g., Get my first job in tech, Complete a certification, Build a portfolio...",
-    required: true,
-  },
-  {
-    id: "longTermGoal",
-    title: "What is your long-term career goal (5–10 years)?",
-    subtitle: "Think about where you want to be in your career",
-    icon: Target,
-    type: "textarea",
-    placeholder: "e.g., Become a senior developer, Start my own company, Lead a team...",
-    required: true,
-  },
-
-  // Step 6: Work Preferences
-  {
-    id: "internshipOpenness",
-    title: "Are you open to internships, part-time jobs, or volunteering for experience?",
-    subtitle: "This helps us suggest relevant opportunities",
-    icon: Briefcase,
-    type: "select",
-    options: ["Yes, very open", "Somewhat open", "Not really", "I'm not sure"],
-    required: true,
-  },
-  {
-    id: "workLocation",
-    title: "Do you prefer on-site, remote, or hybrid opportunities?",
-    subtitle: "Select your preferred work arrangement",
-    icon: Briefcase,
-    type: "select",
-    options: ["On-site only", "Remote only", "Hybrid (mix of both)", "Flexible/No preference"],
-    required: true,
-  },
-
-  // Step 7: Career Motivation
-  {
-    id: "careerMotivation",
-    title: "What motivates you the most in your career journey?",
-    subtitle: "Choose the factor that drives you",
-    icon: Heart,
-    type: "select",
-    options: ["Growth and learning", "Salary and benefits", "Job stability", "Making an impact", "Work-life balance", "Recognition and status"],
-    required: true,
-  },
-  {
-    id: "currentFocus",
-    title: "Are you more focused on building a strong CV or exploring different career options for now?",
-    subtitle: "This helps us prioritize your next steps",
-    icon: Target,
-    type: "select",
-    options: ["Building a strong CV", "Exploring different options", "Both equally", "I'm not sure"],
-    required: true,
-  },
-
-  // Step 8: Career Challenges & Barriers
-  {
-    id: "careerChallenges",
-    title: "What challenges do you currently face in exploring or starting your career?",
-    subtitle: "Select all that apply",
-    icon: Heart,
-    type: "multiselect",
-    options: [
-      "Lack of experience",
-      "Uncertainty about career path",
-      "Limited technical skills",
-      "Limited soft skills",
-      "Geographic limitations",
-      "Financial constraints",
-      "Time constraints",
-      "Lack of network/connections",
-      "Competition in the job market",
-      "Other"
-    ],
-    required: true,
-  },
-  {
-    id: "academicSetbacks",
-    title: "Have you faced any setbacks in academics or projects that affect your career plans?",
-    subtitle: "This helps us understand your background better",
-    icon: Heart,
-    type: "textarea",
-    placeholder: "Describe any academic challenges or setbacks...",
-    required: false,
-  },
-  {
-    id: "personalBarriers",
-    title: "Are there any personal or logistical barriers that might affect your ability to pursue certain career paths?",
-    subtitle: "This helps us provide more personalized guidance",
-    icon: Heart,
-    type: "textarea",
-    placeholder: "Describe any personal or logistical challenges...",
-    required: false,
-  },
-
-  // Step 9: Networking & Professional Exposure
-  {
-    id: "linkedinUsage",
-    title: "Do you already use LinkedIn or other professional platforms?",
-    subtitle: "This helps us understand your online presence",
-    icon: Users,
-    type: "select",
-    options: ["Yes, I'm active on LinkedIn", "Yes, I have accounts but don't use them much", "No, but I'm interested", "No, not interested"],
-    required: true,
-  },
-  {
-    id: "mentorshipInterest",
-    title: "Are you interested in mentorship programs or career coaching?",
-    subtitle: "This helps us suggest relevant programs",
-    icon: Users,
-    type: "select",
-    options: ["Yes, very interested", "Somewhat interested", "Not really", "I'm not sure"],
-    required: true,
-  },
-  {
-    id: "portfolioHelp",
-    title: "Would you like help building your first professional portfolio or CV?",
-    subtitle: "This helps us provide relevant resources",
-    icon: Briefcase,
-    type: "select",
-    options: ["Yes, I need help", "I have some experience", "I'm confident in this area", "I'm not sure"],
-    required: true,
-  },
-
-  // Step 10: Professional Profiles & Documents
-  {
-    id: "cvUpload",
-    title: "Please upload your most recent CV/Resume (PDF, Word) if available.",
-    subtitle: "This helps us analyze your current profile",
-    icon: Upload,
-    type: "file",
-    fileTypes: [".pdf", ".doc", ".docx"],
-    maxFiles: 1,
-    required: false,
-  },
-  {
-    id: "transcriptsUpload",
-    title: "Upload your academic transcripts or mark sheets.",
-    subtitle: "This helps us understand your academic background",
-    icon: Upload,
-    type: "file",
-    fileTypes: [".pdf", ".jpg", ".png"],
-    maxFiles: 5,
-    required: false,
-  },
-  {
-    id: "portfolioLinks",
-    title: "Share links to any professional or project portfolios (e.g., GitHub, Behance, Dribbble).",
-    subtitle: "This helps us understand your work",
-    icon: Upload,
-    type: "textarea",
-    placeholder: "e.g., https://github.com/username, https://behance.net/portfolio...",
-    required: false,
-  },
-  {
-    id: "linkedinProfile",
-    title: "Provide a link to your LinkedIn profile if you have one.",
-    subtitle: "This helps us connect with your professional network",
-    icon: Users,
-    type: "text",
-    placeholder: "https://linkedin.com/in/yourprofile",
-    required: false,
-  },
-  {
-    id: "permissionToAnalyze",
-    title: "Do you give us permission to analyze these documents and profiles to generate your personalized career plan?",
-    subtitle: "We'll use AI to analyze your information and create a tailored career roadmap",
-    icon: Brain,
-    type: "checkbox",
-    required: true,
-  },
-  {
-    id: "completion",
-    title: "Analyzing your profile with AI",
-    subtitle: "Please wait while we process your information and generate your personalized career plan...",
-    icon: Brain,
-    type: "completion",
-  },
-]
 
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState<Record<string, any>>({})
   const [isAnimating, setIsAnimating] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({})
-  const { user, updateUser } = useAuth()
+  const [onboardingSteps, setOnboardingSteps] = useState<OnboardingStep[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const { user, updateUser, getToken } = useAuth()
   const router = useRouter()
   const isMobile = useIsMobile()
+
+  // Fetch questions from backend
+  useEffect(() => {
+    const loadQuestions = async () => {
+      // Get token using the auth context method
+      const token = getToken();
+      
+      if (!token) {
+        setError("No authentication token found");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const questions = await fetchQuestions(token);
+        const steps = transformQuestionsToSteps(questions);
+        setOnboardingSteps(steps);
+      } catch (err) {
+        console.error("Failed to load questions:", err);
+        setError(err instanceof Error ? err.message : "Failed to load questions");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadQuestions();
+  }, [user]); // Depend on user instead of user.token
+
+  // Auto-redirect to preview when completion step is reached
+  useEffect(() => {
+    if (onboardingSteps.length > 0 && currentStep < onboardingSteps.length && onboardingSteps[currentStep]?.type === "completion") {
+      console.log("Completion step reached, redirecting to preview in 2 seconds...")
+      const timer = setTimeout(() => {
+        handleGoToPreview()
+      }, 2000) // 2 second delay to show the completion screen
+      
+      return () => clearTimeout(timer)
+    }
+  }, [onboardingSteps.length, currentStep])
 
   // If onboarding already completed (for users) or role is admin, redirect appropriately
   useEffect(() => {
@@ -445,36 +104,232 @@ export default function OnboardingPage() {
     }
   }, [user, router])
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <ProtectedRoute requireAuth={true} requireOnboarding={true}>
+        <div className="min-h-screen bg-[#0e2439] flex items-center justify-center">
+          <div className="text-center space-y-6">
+            <Loader2 className="h-12 w-12 text-cyan-400 animate-spin mx-auto" />
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-cyan-100">Loading Questions</h2>
+              <p className="text-cyan-300/80">Please wait while we prepare your onboarding experience...</p>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <ProtectedRoute requireAuth={true} requireOnboarding={true}>
+        <div className="min-h-screen bg-[#0e2439] flex items-center justify-center">
+          <div className="text-center space-y-6 max-w-md mx-auto p-6">
+            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
+              <X className="h-8 w-8 text-red-400" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-red-100">Failed to Load Questions</h2>
+              <p className="text-red-300/80">{error}</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold rounded-lg transition-all duration-300"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  // Don't render if no steps loaded yet
+  if (onboardingSteps.length === 0) {
+    return null;
+  }
+
   const progress = ((currentStep + 1) / onboardingSteps.length) * 100
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const step = onboardingSteps[currentStep]
+    
+        console.log("HandleNext called:", {
+          currentStep: currentStep,
+          totalSteps: onboardingSteps.length,
+          isLastRegularStep: currentStep === onboardingSteps.length - 2,
+          stepTitle: step?.title,
+          isValid: isValid
+        })
     
     // Check if current step is valid
     if (!isValid) {
+      console.log("Step is not valid, not proceeding")
       return
     }
 
-    if (currentStep < onboardingSteps.length - 1) {
-      setIsAnimating(true)
-      setTimeout(() => {
-        setCurrentStep(currentStep + 1)
-        setIsAnimating(false)
-        
-        // If we're now on the completion step, start the 10-second timer
-        if (currentStep + 1 === onboardingSteps.length - 1) {
+        if (currentStep < onboardingSteps.length - 2) {
+          console.log("Moving to next step:", currentStep + 1)
+          setIsAnimating(true)
           setTimeout(() => {
-            // Save onboarding data (in a real app, this would go to backend)
-            localStorage.setItem("onboardingData", JSON.stringify(formData))
-            // Update user with name and completion status
-            updateUser({ 
-              hasCompletedOnboarding: true,
-              fullName: (formData.fullName as string) || user?.fullName || "User"
-            });
-            router.push("/dashboard")
-          }, 10000) // 10 seconds
+            setCurrentStep(currentStep + 1)
+            setIsAnimating(false)
+          }, 150)
+        } else {
+          console.log("Last regular question reached, starting preview flow")
+          // Last regular question (step 33) - save data and redirect to preview
+          await handleGoToPreview()
         }
-      }, 150)
+  }
+
+  const handleGoToPreview = async () => {
+    try {
+      console.log("Starting preview flow...")
+      
+      // Save current data to localStorage for preview
+      localStorage.setItem("onboardingFormData", JSON.stringify(formData))
+      localStorage.setItem("onboardingUploadedFiles", JSON.stringify(uploadedFiles))
+      localStorage.setItem("onboardingSteps", JSON.stringify(onboardingSteps))
+      
+      console.log("Data saved for preview:", {
+        formDataKeys: Object.keys(formData),
+        uploadedFilesKeys: Object.keys(uploadedFiles),
+        stepsCount: onboardingSteps.length,
+        currentStep: currentStep,
+        totalSteps: onboardingSteps.length
+      })
+      
+      // Redirect to preview page
+      console.log("Redirecting to /onboarding/preview")
+      router.push('/onboarding/preview')
+    } catch (error) {
+      console.error("Error preparing preview data:", error)
+      setError("Failed to prepare preview data")
+    }
+  }
+
+  const prepareUserResponses = (): UserResponse[] => {
+    const responses: UserResponse[] = []
+    
+    onboardingSteps.forEach(step => {
+      const stepData = formData[step.id]
+      const files = uploadedFiles[step.id] || []
+      
+      let response: UserResponse = {
+        questionId: step.id
+      }
+      
+      // Map answer based on question type
+      switch (step.type) {
+        case 'text':
+        case 'textarea':
+          if (stepData) {
+            response.answerText = stepData
+          }
+          break
+          
+        case 'select':
+          if (stepData) {
+            response.answerChoice = stepData
+          }
+          break
+          
+        case 'multiselect':
+          if (stepData && Array.isArray(stepData)) {
+            response.answerChoice = stepData.join(', ')
+          }
+          break
+          
+        case 'yesno':
+          // Yes/no questions now use answerChoice
+          if (stepData !== undefined) {
+            response.answerChoice = stepData
+          }
+          break
+          
+        case 'link':
+          if (stepData) {
+            response.answerLink = stepData
+          }
+          break
+          
+        case 'file':
+          if (files.length > 0) {
+            response.files = files.map(file => ({
+              file: file.name,
+              type: step.title.toLowerCase().includes('cv') ? 'cv' :
+                   step.title.toLowerCase().includes('cover') ? 'cover-letter' :
+                   step.title.toLowerCase().includes('transcript') ? 'transcript' :
+                   step.title.toLowerCase().includes('certificate') ? 'certificate' : 'document'
+            }))
+          }
+          break
+      }
+      
+      // Only add response if it has an answer
+      if (response.answerText || response.answerChoice || 
+          response.answerLink || response.files) {
+        responses.push(response)
+      }
+    })
+    
+    return responses
+  }
+
+  const handleSaveResponses = async () => {
+    try {
+      setIsSaving(true)
+      setSaveError(null)
+      
+      const token = getToken()
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+      
+      // Prepare responses
+      const responses = prepareUserResponses()
+      
+      // Collect all files
+      const allFiles: File[] = []
+      Object.values(uploadedFiles).forEach(files => {
+        allFiles.push(...files)
+      })
+      
+      console.log('Saving responses:', {
+        responsesCount: responses.length,
+        filesCount: allFiles.length,
+        responses: responses.map(r => ({
+          questionId: r.questionId,
+          hasAnswer: !!(r.answerText || r.answerChoice || r.answerLink || r.files)
+        }))
+      })
+      
+      // Save to backend
+      const result = await saveUserResponses(responses, allFiles, token)
+      
+      if (result.success) {
+        console.log('Responses saved successfully:', result)
+        
+        // Update user progress
+            updateUser({ 
+          ...user, 
+          onboardingCompleted: true,
+          onboardingProgress: 100 
+        })
+        
+        // Redirect to dashboard or success page
+        router.push('/dashboard')
+      } else {
+        throw new Error(result.message || 'Failed to save responses')
+      }
+      
+    } catch (error) {
+      console.error('Error saving responses:', error)
+      setSaveError(error instanceof Error ? error.message : 'Failed to save responses')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -498,13 +353,26 @@ export default function OnboardingPage() {
   const handleSelectOption = (option: string) => {
     const step = onboardingSteps[currentStep]
     
+    console.log("handleSelectOption called:", {
+      option,
+      stepType: step.type,
+      stepOptions: step.options,
+      isYesNo: step.options?.length === 2 && step.options.includes("Yes") && step.options.includes("No")
+    })
+    
     if (step.type === "multiselect") {
       const currentValues = (formData[step.id] as string[]) || []
       const newValues = currentValues.includes(option)
         ? currentValues.filter((v) => v !== option)
         : [...currentValues, option]
       handleInputChange(newValues)
+    } else if (step.options?.length === 2 && 
+               step.options.includes("Yes") && step.options.includes("No")) {
+      // This is a yes/no question - store as string
+      console.log("Yes/No question - storing as string:", { option })
+      handleInputChange(option)
     } else {
+      console.log("Regular select question - storing as string:", { option })
       handleInputChange(option)
     }
   }
@@ -515,9 +383,24 @@ export default function OnboardingPage() {
     const step = onboardingSteps[currentStep]
     const fileArray = Array.from(files)
     
+    // Convert File objects to serializable metadata
+    const fileMetadata = fileArray.map(file => ({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified
+    }))
+    
+    console.log(`File upload for step "${step.title}":`, {
+      stepId: step.id,
+      files: fileArray,
+      fileNames: fileArray.map(f => f.name),
+      fileSizes: fileArray.map(f => f.size)
+    });
+    
     setUploadedFiles(prev => ({
       ...prev,
-      [step.id]: fileArray
+      [step.id]: fileMetadata
     }))
   }
 
@@ -538,11 +421,43 @@ export default function OnboardingPage() {
 
   const currentStepData = onboardingSteps[currentStep]
   const currentValue = formData[currentStepData.id]
-  const isValid = !currentStepData.required || (currentValue && (
-    Array.isArray(currentValue) ? currentValue.length > 0 : 
-    typeof currentValue === 'boolean' ? currentValue :
-    currentValue.toString().trim().length > 0
-  )) || false
+  
+  // Special validation for file uploads
+  const isValid = !currentStepData.required || (() => {
+    if (currentStepData.type === "file") {
+      // For file uploads, check if files are uploaded
+      const files = uploadedFiles[currentStepData.id]
+      const hasFiles = files && files.length > 0
+      
+      // Debug logging for file validation
+      console.log(`File validation for "${currentStepData.title}":`, {
+        files: files,
+        filesLength: files?.length || 0,
+        hasFiles: hasFiles,
+        required: currentStepData.required
+      });
+      
+      return hasFiles
+    }
+    
+    // For other question types, use existing validation
+    return currentValue && (
+      Array.isArray(currentValue) ? currentValue.length > 0 : 
+      typeof currentValue === 'boolean' ? currentValue :
+      currentValue.toString().trim().length > 0
+    )
+  })() || false
+  
+    // Debug logging for current step
+    console.log("Current step info:", {
+      currentStep: currentStep,
+      totalSteps: onboardingSteps.length,
+      isLastRegularStep: currentStep === onboardingSteps.length - 2,
+      isCompletionStep: currentStep === onboardingSteps.length - 1,
+      stepTitle: currentStepData?.title,
+      stepType: currentStepData?.type,
+      isValid: isValid
+    })
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && isValid && currentStepData.type !== "textarea") {
@@ -593,7 +508,7 @@ export default function OnboardingPage() {
               }`}
             >
               {currentStepData.type === "completion" ? (
-                // Completion step without card wrapper
+                // Completion step - redirect to preview
                 <div className="space-y-6 sm:space-y-8">
                   {/* Question */}
                   <div className="text-center">
@@ -618,10 +533,18 @@ export default function OnboardingPage() {
                         {/* Text */}
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="text-center text-white px-4">
-                            <div className="text-lg sm:text-xl font-semibold mb-2">Analyzing your</div>
-                            <div className="text-lg sm:text-xl font-semibold">profile with AI</div>
+                            <div className="text-lg sm:text-xl font-semibold mb-2">Ready to</div>
+                            <div className="text-lg sm:text-xl font-semibold">Review & Submit</div>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                    
+                    {/* Auto-redirect to preview */}
+                    <div className="text-center">
+                      <p className="text-cyan-300/80 mb-4">Redirecting to preview...</p>
+                      <div className="flex justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
                       </div>
                     </div>
                   </div>
@@ -647,11 +570,37 @@ export default function OnboardingPage() {
                       {/* Answer options */}
                       {(currentStepData.type === "select" || currentStepData.type === "multiselect") && (
                         <div className="space-y-2 sm:space-y-3">
+                          {/* Debug logging for select options */}
+                          {console.log(`Rendering ${currentStepData.type} question:`, {
+                            title: currentStepData.title,
+                            options: currentStepData.options,
+                            optionsLength: currentStepData.options?.length
+                          })}
                           {currentStepData.options?.map((option) => {
-                            const isSelected =
-                              currentStepData.type === "multiselect"
-                                ? (currentValue as string[])?.includes(option)
-                                : currentValue === option
+                            let isSelected = false
+                            
+                            if (currentStepData.type === "multiselect") {
+                              isSelected = (currentValue as string[])?.includes(option)
+                            } else if (currentStepData.options?.length === 2 && 
+                                       currentStepData.options.includes("Yes") && 
+                                       currentStepData.options.includes("No")) {
+                              // This is a yes/no question - compare string with option
+                              isSelected = currentValue === option
+                            } else {
+                              // Regular select question
+                              isSelected = currentValue === option
+                            }
+                            
+                            // Debug logging for selection state
+                            console.log(`Option "${option}" selection state:`, {
+                              currentValue,
+                              currentValueType: typeof currentValue,
+                              isSelected,
+                              isYesNo: currentStepData.options?.length === 2 && 
+                                       currentStepData.options.includes("Yes") && 
+                                       currentStepData.options.includes("No")
+                            })
+                            
                             return (
                               <button
                                 key={option}
@@ -774,8 +723,37 @@ export default function OnboardingPage() {
                                   </div>
                                 </div>
                               ))}
+                              {/* Only show "Add more files" if user hasn't reached max files limit */}
+                              {(!currentStepData.maxFiles || uploadedFiles[currentStepData.id].length < currentStepData.maxFiles) && (
                               <button
-                                onClick={() => setUploadedFiles(prev => ({ ...prev, [currentStepData.id]: [] }))}
+                                  onClick={() => {
+                                    // Create a hidden file input to trigger file selection
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = currentStepData.fileTypes?.join(",");
+                                    input.multiple = Boolean(currentStepData.maxFiles && currentStepData.maxFiles > 1);
+                                    input.onchange = (e) => {
+                                      const target = e.target as HTMLInputElement;
+                                      if (target.files) {
+                                        const existingFiles = uploadedFiles[currentStepData.id] || [];
+                                        const newFiles = Array.from(target.files);
+                                        const allFiles = [...existingFiles, ...newFiles];
+                                        
+                                        // Check max files limit
+                                        const maxFiles = currentStepData.maxFiles || 5;
+                                        if (allFiles.length > maxFiles) {
+                                          alert(`Maximum ${maxFiles} files allowed. You can upload ${maxFiles - existingFiles.length} more files.`);
+                                          return;
+                                        }
+                                        
+                                        setUploadedFiles(prev => ({
+                                          ...prev,
+                                          [currentStepData.id]: allFiles
+                                        }));
+                                      }
+                                    };
+                                    input.click();
+                                  }}
                                 className="w-full p-3 sm:p-4 border-2 border-dashed border-cyan-400/30 rounded-xl text-center transition-all duration-300 hover:border-cyan-400/50 hover:bg-cyan-400/5"
                               >
                                 <div className="space-y-2">
@@ -783,6 +761,7 @@ export default function OnboardingPage() {
                                   <p className="text-sm sm:text-base text-cyan-100">Add more files</p>
                                 </div>
                               </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -792,6 +771,25 @@ export default function OnboardingPage() {
                 </GlassCard>
               )}
             </div>
+
+            {/* Error Display */}
+            {saveError && (
+              <div className="fixed top-4 right-4 z-50 bg-red-500/90 backdrop-blur-sm text-white p-4 rounded-lg shadow-lg max-w-md">
+                <div className="flex items-center gap-2">
+                  <X className="h-5 w-5 text-red-200" />
+                  <div>
+                    <p className="font-semibold">Save Failed</p>
+                    <p className="text-sm text-red-100">{saveError}</p>
+                  </div>
+                  <button 
+                    onClick={() => setSaveError(null)}
+                    className="ml-auto p-1 hover:bg-red-400/20 rounded"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Navigation */}
             {currentStepData.type !== "completion" && (
@@ -809,17 +807,26 @@ export default function OnboardingPage() {
 
                 <button 
                   onClick={handleNext} 
-                  disabled={!isValid || isAnimating} 
+                  disabled={!isValid || isAnimating || isSaving} 
                   className="flex items-center gap-2 h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold tracking-wide shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none rounded-md relative z-50 text-sm sm:text-base"
                   style={{ position: 'relative', zIndex: 50 }}
                 >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
                   <span className="hidden sm:inline">
-                    {currentStep === onboardingSteps.length - 2 ? "Complete" : "Next"}
+                        {currentStep === onboardingSteps.length - 2 ? "Review & Submit" : "Next"}
                   </span>
                   <span className="sm:hidden">
-                    {currentStep === onboardingSteps.length - 2 ? "Done" : "Next"}
+                        {currentStep === onboardingSteps.length - 2 ? "Review" : "Next"}
                   </span>
                   <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
                 </button>
               </div>
             )}
