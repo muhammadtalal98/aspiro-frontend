@@ -29,7 +29,7 @@ import { saveUserResponses, UserResponse } from "@/lib/user-response-api"
 
 interface PreviewQuestion extends OnboardingStep {
   answer: any
-  files?: File[]
+  files?: any[] // Changed from File[] to any[] to handle metadata
 }
 
 export default function PreviewPage() {
@@ -50,24 +50,29 @@ export default function PreviewPage() {
         console.log("Preview page loading...")
         
         const formData = JSON.parse(localStorage.getItem("onboardingFormData") || "{}")
-        const uploadedFiles = JSON.parse(localStorage.getItem("onboardingUploadedFiles") || "{}")
+        const uploadedFilesMetadata = JSON.parse(localStorage.getItem("onboardingUploadedFiles") || "{}")
         const onboardingSteps = JSON.parse(localStorage.getItem("onboardingSteps") || "[]")
+        
+        // Get actual File objects from global variable
+        const actualFiles = (window as any).__onboardingFiles || {}
         
         console.log("Preview data loaded:", {
           formDataKeys: Object.keys(formData),
-          uploadedFilesKeys: Object.keys(uploadedFiles),
+          uploadedFilesKeys: Object.keys(uploadedFilesMetadata),
+          actualFilesKeys: Object.keys(actualFiles),
           stepsCount: onboardingSteps.length
         })
         
         const previewQuestions: PreviewQuestion[] = onboardingSteps.map((step: OnboardingStep) => {
           let answer = formData[step.id] || null
           
-          // Keep yes/no answers as strings (no conversion needed)
+          // Use actual File objects if available, otherwise fall back to metadata
+          const files = actualFiles[step.id] || uploadedFilesMetadata[step.id] || []
           
           return {
             ...step,
             answer,
-            files: uploadedFiles[step.id] || []
+            files: files
           }
         })
         
@@ -266,17 +271,27 @@ export default function PreviewPage() {
       // Prepare responses
       const responses = prepareUserResponses()
       
-      // Collect all files
+      // Collect all files - handle both File objects and metadata
       const allFiles: File[] = []
       questions.forEach(q => {
         if (q.files) {
-          allFiles.push(...q.files)
+          q.files.forEach(file => {
+            // Check if it's a File object or metadata
+            if (file instanceof File) {
+              allFiles.push(file)
+            } else if (file.name) {
+              // This is metadata, we can't reconstruct the File object
+              // The backend will handle this based on the file metadata in responses
+              console.warn(`File "${file.name}" is metadata, not a File object. This may cause upload issues.`)
+            }
+          })
         }
       })
       
       console.log('Submitting responses:', {
         responsesCount: responses.length,
-        filesCount: allFiles.length
+        filesCount: allFiles.length,
+        filesWithMetadata: questions.filter(q => q.files && q.files.some(f => !(f instanceof File))).length
       })
       
       // Save to backend
@@ -288,17 +303,22 @@ export default function PreviewPage() {
         // Update user progress
         updateUser({ 
           ...user, 
-          onboardingCompleted: true,
-          onboardingProgress: 100 
+          hasCompletedOnboarding: true
         })
         
-        // Clear onboarding data
-        localStorage.removeItem("onboardingFormData")
-        localStorage.removeItem("onboardingUploadedFiles")
-        localStorage.removeItem("onboardingSteps")
+        // Clear global file storage
+        delete (window as any).__onboardingFiles
         
-        // Redirect to dashboard
-        router.push('/dashboard')
+        // Add a small delay to ensure user state is updated before redirect
+        setTimeout(() => {
+          // Clear onboarding data after a brief delay
+          localStorage.removeItem("onboardingFormData")
+          localStorage.removeItem("onboardingUploadedFiles")
+          localStorage.removeItem("onboardingSteps")
+          
+          // Redirect to analyzing page
+          router.push('/analyzing')
+        }, 100)
       } else {
         throw new Error(result.message || 'Failed to save responses')
       }

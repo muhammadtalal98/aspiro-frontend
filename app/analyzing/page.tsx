@@ -1,21 +1,43 @@
 "use client"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import ProtectedRoute from "@/components/ProtectedRoute"
-import { Brain } from "lucide-react"
+import { Brain, Loader2 } from "lucide-react"
 
 export default function AnalyzingPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const [countdown, setCountdown] = useState(10)
 
   useEffect(() => {
     // Show analyzing screen for 10 seconds, then redirect to dashboard
     const timer = setTimeout(() => {
+      // Clear any remaining onboarding data before redirecting to dashboard
+      localStorage.removeItem("onboardingFormData")
+      localStorage.removeItem("onboardingUploadedFiles")
+      localStorage.removeItem("onboardingSteps")
+      localStorage.removeItem("onboardingData")
+      sessionStorage.removeItem("onboardingData")
+      
       router.push("/dashboard")
     }, 10000)
 
-    return () => clearTimeout(timer)
+    // Countdown timer
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => {
+      clearTimeout(timer)
+      clearInterval(countdownInterval)
+    }
   }, [router])
 
   return (
@@ -33,7 +55,7 @@ export default function AnalyzingPage() {
         {/* Main content */}
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center space-y-8">
-            {/* Question */}
+            {/* Header */}
             <div>
               <h1 className="text-3xl font-bold text-cyan-100 text-balance mb-4 tracking-wide">
                 Analyzing your profile with AI
@@ -43,22 +65,41 @@ export default function AnalyzingPage() {
               </p>
             </div>
 
-            {/* Completion content */}
+            {/* Analyzing Animation */}
             <div className="text-center space-y-8">
-              {/* Glowing Circle with Text */}
+              {/* Glowing Circle with AI Brain */}
               <div className="relative">
                 <div className="w-80 h-80 mx-auto relative">
                   {/* Glowing Outline Ring */}
                   <div className="absolute inset-0 rounded-full border-2 border-cyan-400 shadow-lg shadow-cyan-400/50 animate-pulse"></div>
                   
-                  {/* Text */}
+                  {/* AI Brain Icon */}
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center text-white">
+                      <Brain className="h-16 w-16 text-cyan-400 mx-auto mb-4 animate-pulse" />
                       <div className="text-xl font-semibold mb-2">Analyzing your</div>
                       <div className="text-xl font-semibold">profile with AI</div>
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* Loading Animation */}
+              <div className="flex justify-center">
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-6 w-6 text-cyan-400 animate-spin" />
+                  <span className="text-cyan-300">Processing your responses...</span>
+                </div>
+              </div>
+
+              {/* Countdown Timer */}
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full border-2 border-cyan-400 bg-cyan-400/10">
+                  <span className="text-2xl font-bold text-cyan-100">{countdown}</span>
+                </div>
+                <p className="text-cyan-300/80 mt-2 text-sm">
+                  Redirecting to dashboard in {countdown} second{countdown !== 1 ? 's' : ''}...
+                </p>
               </div>
             </div>
           </div>

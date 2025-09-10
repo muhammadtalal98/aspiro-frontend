@@ -190,8 +190,23 @@ export default function OnboardingPage() {
       
       // Save current data to localStorage for preview
       localStorage.setItem("onboardingFormData", JSON.stringify(formData))
-      localStorage.setItem("onboardingUploadedFiles", JSON.stringify(uploadedFiles))
       localStorage.setItem("onboardingSteps", JSON.stringify(onboardingSteps))
+      
+      // Convert File objects to metadata for localStorage storage
+      const fileMetadata: Record<string, any[]> = {}
+      Object.keys(uploadedFiles).forEach(stepId => {
+        fileMetadata[stepId] = uploadedFiles[stepId].map(file => ({
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified
+        }))
+      })
+      localStorage.setItem("onboardingUploadedFiles", JSON.stringify(fileMetadata))
+      
+      // Store actual File objects in a global variable that the preview page can access
+      // This is a workaround since File objects can't be serialized to localStorage
+      ;(window as any).__onboardingFiles = uploadedFiles
       
       console.log("Data saved for preview:", {
         formDataKeys: Object.keys(formData),
@@ -315,12 +330,11 @@ export default function OnboardingPage() {
         // Update user progress
             updateUser({ 
           ...user, 
-          onboardingCompleted: true,
-          onboardingProgress: 100 
+          hasCompletedOnboarding: true
         })
         
-        // Redirect to dashboard or success page
-        router.push('/dashboard')
+        // Redirect to analyzing page
+        router.push('/analyzing')
       } else {
         throw new Error(result.message || 'Failed to save responses')
       }
@@ -383,14 +397,6 @@ export default function OnboardingPage() {
     const step = onboardingSteps[currentStep]
     const fileArray = Array.from(files)
     
-    // Convert File objects to serializable metadata
-    const fileMetadata = fileArray.map(file => ({
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      lastModified: file.lastModified
-    }))
-    
     console.log(`File upload for step "${step.title}":`, {
       stepId: step.id,
       files: fileArray,
@@ -400,7 +406,7 @@ export default function OnboardingPage() {
     
     setUploadedFiles(prev => ({
       ...prev,
-      [step.id]: fileMetadata
+      [step.id]: fileArray
     }))
   }
 
