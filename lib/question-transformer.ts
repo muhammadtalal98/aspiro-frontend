@@ -18,7 +18,8 @@ export interface OnboardingStep {
   title: string;
   subtitle: string;
   icon: React.ElementType;
-  type: "text" | "textarea" | "select" | "multiselect" | "file" | "checkbox" | "completion";
+  // include yesno and link to match frontend usages
+  type: "text" | "textarea" | "select" | "multiselect" | "file" | "checkbox" | "completion" | "yesno" | "link";
   options?: string[];
   placeholder?: string;
   required?: boolean;
@@ -53,13 +54,13 @@ const mapQuestionType = (backendType: string): OnboardingStep['type'] => {
     case "text":
       return "text";
     case "yes/no":
-      return "select";
+      return "yesno";
     case "multiple-choice":
       return "select";
     case "upload":
       return "file";
     case "link":
-      return "text";
+      return "link";
     default:
       return "text";
   }
