@@ -18,7 +18,7 @@ const sidebarItems = [
   { icon: Users2, label: "Majors", href: "/admin/majors" },
   { icon: User, label: "Users", href: "/admin/users" },
   { icon: HelpCircle, label: "Questions", href: "/admin/questions" },
-  { icon: Brain, label: "AI Logs", href: "/admin/ai-logs" },
+  { icon: Brain, label: "AI Processing", href: "/admin/ai-processing" },
   // { icon: FileText, label: "Questionnaires", href: "/admin/questionnaires" },
   // { icon: BarChart3, label: "Reports", href: "/admin/reports" },
 ]
