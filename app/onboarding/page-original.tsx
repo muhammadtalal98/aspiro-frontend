@@ -1,5 +1,4 @@
 "use client"
-<<<<<<< HEAD
 import { useEffect, useState } from "react"
 import type React from "react"
 
@@ -29,13 +28,12 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
-import ProtectedRoute from "@/components/ProtectedRoute"
+import AuthGuard from "../../components/AuthGuard"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { fetchQuestions } from "@/lib/questions-api"
 import { transformQuestionsToSteps, OnboardingStep } from "@/lib/question-transformer"
 import { saveUserResponses, UserResponse } from "@/lib/user-response-api"
-import { preFillQuestions, PreFillResponse, applyPreFilledAnswers } from "@/lib/prefill-api"
-import PreFillDisplay from "@/components/PreFillDisplay"
+import { uploadCV, getCVSuggestions, CVUploadResponse } from "@/lib/cv-api"
 
 
 export default function OnboardingPage() {
@@ -48,12 +46,54 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [preFillData, setPreFillData] = useState<PreFillResponse | null>(null)
-  const [isProcessingCV, setIsProcessingCV] = useState(false)
-  const [cvProcessingError, setCvProcessingError] = useState<string | null>(null)
+  const [cvUploaded, setCvUploaded] = useState(false)
+  const [cvSuggestions, setCvSuggestions] = useState<{
+    autoFilled: Record<string, string>;
+    aiSuggestions: Record<string, string[]>;
+  }>({ autoFilled: {}, aiSuggestions: {} })
+  const [isUploadingCV, setIsUploadingCV] = useState(false)
+  const [cvUploadError, setCvUploadError] = useState<string | null>(null)
   const { user, updateUser, getToken } = useAuth()
   const router = useRouter()
   const isMobile = useIsMobile()
+
+  // Load existing CV suggestions
+  useEffect(() => {
+    const loadCVSuggestions = async () => {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const suggestions = await getCVSuggestions(token);
+        setCvSuggestions(suggestions.data);
+        if (Object.keys(suggestions.data.autoFilled).length > 0 || Object.keys(suggestions.data.aiSuggestions).length > 0) {
+          setCvUploaded(true);
+        }
+      } catch (err) {
+        console.error("Failed to load CV suggestions:", err);
+        // Don't show error for this, it's optional
+      }
+    };
+
+    if (user) {
+      loadCVSuggestions();
+    }
+  }, [user, getToken]);
+
+  // Apply auto-filled data when questions are loaded
+  useEffect(() => {
+    if (onboardingSteps.length > 0 && Object.keys(cvSuggestions.autoFilled).length > 0) {
+      const newFormData = { ...formData };
+      Object.entries(cvSuggestions.autoFilled).forEach(([questionId, answer]) => {
+        // Find the step that corresponds to this question ID
+        const step = onboardingSteps.find(s => s.id === questionId);
+        if (step && !newFormData[questionId]) {
+          newFormData[questionId] = answer;
+        }
+      });
+      setFormData(newFormData);
+    }
+  }, [onboardingSteps, cvSuggestions.autoFilled]);
 
   // Fetch questions from backend
   useEffect(() => {
@@ -113,7 +153,7 @@ export default function OnboardingPage() {
   // Show loading state
   if (isLoading) {
     return (
-      <ProtectedRoute requireAuth={true} requireOnboarding={true}>
+      <div>
         <div className="min-h-screen bg-[#0e2439] flex items-center justify-center">
           <div className="text-center space-y-6">
             <Loader2 className="h-12 w-12 text-cyan-400 animate-spin mx-auto" />
@@ -123,14 +163,14 @@ export default function OnboardingPage() {
             </div>
           </div>
         </div>
-      </ProtectedRoute>
+      </div>
     );
   }
 
   // Show error state
   if (error) {
     return (
-      <ProtectedRoute requireAuth={true} requireOnboarding={true}>
+      <div>
         <div className="min-h-screen bg-[#0e2439] flex items-center justify-center">
           <div className="text-center space-y-6 max-w-md mx-auto p-6">
             <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
@@ -148,7 +188,7 @@ export default function OnboardingPage() {
             </button>
           </div>
         </div>
-      </ProtectedRoute>
+      </div>
     );
   }
 
@@ -157,20 +197,18 @@ export default function OnboardingPage() {
     return null;
   }
 
-  // Calculate progress
-  const totalSteps = onboardingSteps.length
-  const progress = ((currentStep + 1) / totalSteps) * 100
+  const progress = ((currentStep + 1) / onboardingSteps.length) * 100
 
   const handleNext = async () => {
     const step = onboardingSteps[currentStep]
     
-    console.log("HandleNext called:", {
-      currentStep: currentStep,
-      totalSteps: totalSteps,
-      isLastRegularStep: currentStep === onboardingSteps.length - 2,
-      stepTitle: step?.title,
-      isValid: isValid
-    })
+        console.log("HandleNext called:", {
+          currentStep: currentStep,
+          totalSteps: onboardingSteps.length,
+          isLastRegularStep: currentStep === onboardingSteps.length - 2,
+          stepTitle: step?.title,
+          isValid: isValid
+        })
     
     // Check if current step is valid
     if (!isValid) {
@@ -178,18 +216,18 @@ export default function OnboardingPage() {
       return
     }
 
-    if (currentStep < onboardingSteps.length - 2) {
-      console.log("Moving to next step:", currentStep + 1)
-      setIsAnimating(true)
-      setTimeout(() => {
-        setCurrentStep(currentStep + 1)
-        setIsAnimating(false)
-      }, 150)
-    } else {
-      console.log("Last regular question reached, starting preview flow")
-      // Last regular question - save data and redirect to preview
-      await handleGoToPreview()
-    }
+        if (currentStep < onboardingSteps.length - 2) {
+          console.log("Moving to next step:", currentStep + 1)
+          setIsAnimating(true)
+          setTimeout(() => {
+            setCurrentStep(currentStep + 1)
+            setIsAnimating(false)
+          }, 150)
+        } else {
+          console.log("Last regular question reached, starting preview flow")
+          // Last regular question (step 33) - save data and redirect to preview
+          await handleGoToPreview()
+        }
   }
 
   const handleGoToPreview = async () => {
@@ -372,36 +410,11 @@ export default function OnboardingPage() {
     }))
   }
 
-
-  const handleAcceptAnswer = (questionId: string, answer: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [questionId]: answer
-    }))
-  }
-
-  const handleAcceptSuggestion = (questionId: string, suggestion: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [questionId]: suggestion
-    }))
-  }
-
-  const handleEditAnswer = (questionId: string, answer: any) => {
-    // This will be handled by the existing input change handlers
-    setFormData(prev => ({
-      ...prev,
-      [questionId]: answer
-    }))
-  }
-
   const handleSelectOption = (option: string) => {
     const step = onboardingSteps[currentStep]
-    if (!step) return
     
     console.log("handleSelectOption called:", {
       option,
-      currentStep,
       stepType: step.type,
       stepOptions: step.options,
       isYesNo: step.options?.length === 2 && step.options.includes("Yes") && step.options.includes("No")
@@ -424,18 +437,14 @@ export default function OnboardingPage() {
     }
   }
 
-  const handleFileUpload = async (files: FileList | null) => {
+  const handleFileUpload = (files: FileList | null) => {
     if (!files) return
     
     const step = onboardingSteps[currentStep]
-    if (!step) return
-    
     const fileArray = Array.from(files)
     
     console.log(`File upload for step "${step.title}":`, {
       stepId: step.id,
-      currentStep: currentStep,
-      stepType: step.type,
       files: fileArray,
       fileNames: fileArray.map(f => f.name),
       fileSizes: fileArray.map(f => f.size)
@@ -445,86 +454,47 @@ export default function OnboardingPage() {
       ...prev,
       [step.id]: fileArray
     }))
-
-    // Check if this is a CV upload step (should be step 1 after user type question)
-    // Only process main CV upload, not optional supporting documents
-    const isCVUpload = currentStep === 1 && step.type === "file" && 
-                      (step.title.toLowerCase().includes('cv') || 
-                       step.title.toLowerCase().includes('resume') ||
-                       (step.title.toLowerCase().includes('most recent') && step.title.toLowerCase().includes('cv')) ||
-                       step.stepName.toLowerCase().includes('professional'))
-
-    console.log('CV upload detection:', {
-      currentStep,
-      stepType: step.type,
-      stepTitle: step.title,
-      stepName: step.stepName,
-      isCVUpload,
-      hasFiles: fileArray.length > 0
-    });
-
-    if (isCVUpload && fileArray.length > 0) {
-      console.log('Processing CV upload...');
-      await processCVAndPreFill(fileArray)
-    }
   }
 
-  const processCVAndPreFill = async (cvFiles: File[]) => {
-    try {
-      setIsProcessingCV(true)
-      setCvProcessingError(null)
+  const handleCVUpload = async (file: File) => {
+    const token = getToken();
+    if (!token) {
+      setCvUploadError("No authentication token found");
+      return;
+    }
 
-      console.log('Processing CV for pre-filling questions...')
+    setIsUploadingCV(true);
+    setCvUploadError(null);
+
+    try {
+      const response = await uploadCV(file, token);
       
-      const result = await preFillQuestions(cvFiles, getToken())
+      // Update CV suggestions with new data
+      setCvSuggestions({
+        autoFilled: response.data.autoFilled,
+        aiSuggestions: response.data.aiSuggestions
+      });
       
-      if (result.success) {
-        setPreFillData(result)
-        
-        // Apply pre-filled answers to form data
-        if (result.data?.preFilledAnswers) {
-          console.log('Applying pre-filled answers:', {
-            preFilledAnswers: result.data.preFilledAnswers,
-            onboardingStepsCount: onboardingSteps.length,
-            onboardingSteps: onboardingSteps.map(step => ({ id: step.id, title: step.title }))
-          });
-          
-          const preFilledFormData = applyPreFilledAnswers(
-            result.data.preFilledAnswers,
-            onboardingSteps
-          )
-          
-          console.log('Pre-filled form data generated:', preFilledFormData);
-          console.log('Auto-fill vs AI suggestions breakdown:', {
-            autoFillAnswers: Object.entries(result.data.preFilledAnswers).filter(([id, answer]) => answer.type === 'auto-fill'),
-            aiSuggestionsAnswers: Object.entries(result.data.preFilledAnswers).filter(([id, answer]) => answer.type === 'ai-suggestions'),
-            totalAnswers: Object.keys(result.data.preFilledAnswers).length
-          });
-          
-          setFormData(prev => {
-            const updated = { ...prev, ...preFilledFormData };
-            console.log('Updated form data:', updated);
-            console.log('Previous form data:', prev);
-            console.log('New pre-filled data added:', preFilledFormData);
-            return updated;
-          })
-        }
-        
-        console.log('CV processing completed successfully:', {
-          autoFillCount: result.metadata?.autoFillCount || 0,
-          aiSuggestionsCount: result.metadata?.aiSuggestionsCount || 0,
-          totalPreFilledAnswers: Object.keys(result.data?.preFilledAnswers || {}).length,
-          preFilledQuestionIds: Object.keys(result.data?.preFilledAnswers || {}),
-          preFilledAnswers: result.data?.preFilledAnswers
-        })
-      } else {
-        throw new Error(result.message || 'Failed to process CV')
-      }
+      setCvUploaded(true);
+      
+      // Auto-fill form data with extracted answers
+      const newFormData = { ...formData };
+      Object.entries(response.data.autoFilled).forEach(([questionId, answer]) => {
+        newFormData[questionId] = answer;
+      });
+      setFormData(newFormData);
+      
+      console.log("CV uploaded successfully:", {
+        autoFilled: Object.keys(response.data.autoFilled).length,
+        aiSuggestions: Object.keys(response.data.aiSuggestions).length,
+        extractedData: response.data.extractedData
+      });
+      
     } catch (error) {
-      console.error('Error processing CV:', error)
-      setCvProcessingError(error instanceof Error ? error.message : 'Failed to process CV')
+      console.error("CV upload failed:", error);
+      setCvUploadError(error instanceof Error ? error.message : "Failed to upload CV");
     } finally {
-      setIsProcessingCV(false)
+      setIsUploadingCV(false);
     }
   }
 
@@ -544,19 +514,10 @@ export default function OnboardingPage() {
   }
 
   const currentStepData = onboardingSteps[currentStep]
-  const currentValue = formData[currentStepData?.id]
+  const currentValue = formData[currentStepData.id]
   
-  // Validation for current step
-  const isValid = (() => {
-    if (!currentStepData) return false
-    
-    // If question is optional, always allow proceeding
-    if (!currentStepData.required) {
-      console.log(`Optional question "${currentStepData.title}" - allowing proceed without answer`);
-      return true;
-    }
-    
-    // Special validation for file uploads
+  // Special validation for file uploads
+  const isValid = !currentStepData.required || (() => {
     if (currentStepData.type === "file") {
       // For file uploads, check if files are uploaded
       const files = uploadedFiles[currentStepData.id]
@@ -581,38 +542,25 @@ export default function OnboardingPage() {
     )
   })() || false
   
-    // Debug logging for current step
-    console.log("Current step info:", {
-      currentStep: currentStep,
-      totalSteps: totalSteps,
-      onboardingStepIndex: currentStep,
-      isLastRegularStep: currentStep === onboardingSteps.length - 2,
-      isCompletionStep: currentStep === onboardingSteps.length - 1,
-      stepTitle: currentStepData?.title,
-      stepType: currentStepData?.type,
-      isRequired: currentStepData?.required,
-      isOptional: !currentStepData?.required,
-      isUserTypeQuestion: currentStepData?.title?.toLowerCase().includes('student') && currentStepData?.title?.toLowerCase().includes('professional'),
-      isCVUploadQuestion: currentStep === 1 && currentStepData?.type === "file",
-      isValid: isValid
-    })
+  // Debug logging for current step
+  console.log("Current step info:", {
+    currentStep: currentStep,
+    totalSteps: onboardingSteps.length,
+    isLastRegularStep: currentStep === onboardingSteps.length - 2,
+    isCompletionStep: currentStep === onboardingSteps.length - 1,
+    stepTitle: currentStepData?.title,
+    stepType: currentStepData?.type,
+    isValid: isValid
+  })
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && isValid && currentStepData?.type !== "textarea") {
+    if (e.key === "Enter" && isValid && currentStepData.type !== "textarea") {
       handleNext()
     }
   }
-=======
-import { useState } from "react"
-
-export default function OnboardingPage() {
-  const [currentStep, setCurrentStep] = useState(0)
->>>>>>> 1d599c143b571d8aaa838dbcd3ff527e1b96f3e8
-
 
   return (
-<<<<<<< HEAD
-    <ProtectedRoute requireAuth={true} requireOnboarding={true}>
+    <div>
       <div className="min-h-screen bg-[#0e2439] flex flex-col relative overflow-hidden">
         {/* Animated background particles - reduced on mobile for performance */}
         <div className="absolute inset-0">
@@ -632,7 +580,7 @@ export default function OnboardingPage() {
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs sm:text-sm text-cyan-300">
-                Step {currentStep + 1} of {totalSteps}
+                Step {currentStep + 1} of {onboardingSteps.length}
               </span>
               <span className="text-xs sm:text-sm text-cyan-300">{Math.round(progress)}% complete</span>
             </div>
@@ -653,7 +601,7 @@ export default function OnboardingPage() {
                 isAnimating ? "opacity-0 transform translate-y-8" : "opacity-100 transform translate-y-0"
               }`}
             >
-              {currentStepData?.type === "completion" ? (
+              {currentStepData.type === "completion" ? (
                 // Completion step - redirect to preview
                 <div className="space-y-6 sm:space-y-8">
                   {/* Question */}
@@ -711,52 +659,45 @@ export default function OnboardingPage() {
                             {currentStepData.subtitle}
                           </p>
                         )}
-                        {!currentStepData.required && (
-                          <p className="text-xs sm:text-sm text-cyan-400/70 mt-2 italic">
-                            This question is optional - you can skip it and proceed
-                          </p>
-                        )}
                       </div>
-
-                      {/* Pre-fill Display */}
-                      {preFillData?.data?.preFilledAnswers?.[currentStepData.id] && (
-                        <PreFillDisplay
-                          questionId={currentStepData.id}
-                          questionText={currentStepData.title}
-                          questionType={preFillData.data.preFilledAnswers[currentStepData.id].metadata.questionType}
-                          preFillAnswer={preFillData.data.preFilledAnswers[currentStepData.id]}
-                          currentValue={currentValue}
-                          onAcceptAnswer={handleAcceptAnswer}
-                          onAcceptSuggestion={handleAcceptSuggestion}
-                          onEditAnswer={handleEditAnswer}
-                        />
-                      )}
-                      
-                      {/* Debug: Show current value and pre-fill data */}
-                      {process.env.NODE_ENV === 'development' && (
-                        <div className="mt-4 p-3 bg-gray-800/50 border border-gray-600 rounded text-xs text-gray-300">
-                          <div>Question ID: {currentStepData.id}</div>
-                          <div>Required: {currentStepData.required ? 'Yes' : 'No'}</div>
-                          <div>Optional: {!currentStepData.required ? 'Yes' : 'No'}</div>
-                          <div>Current Value: {JSON.stringify(currentValue)}</div>
-                          <div>Form Data for this question: {JSON.stringify(formData[currentStepData.id])}</div>
-                          <div>Pre-fill available: {preFillData?.data?.preFilledAnswers?.[currentStepData.id] ? 'Yes' : 'No'}</div>
-                          <div>Total pre-fill answers: {Object.keys(preFillData?.data?.preFilledAnswers || {}).length}</div>
-                          <div>Available pre-fill IDs: {Object.keys(preFillData?.data?.preFilledAnswers || {}).join(', ')}</div>
-                          {preFillData?.data?.preFilledAnswers?.[currentStepData.id] && (
-                            <div>
-                              <div>Pre-fill answer: {JSON.stringify(preFillData.data.preFilledAnswers[currentStepData.id].answer)}</div>
-                              <div>Pre-fill type: {preFillData.data.preFilledAnswers[currentStepData.id].type}</div>
-                              <div>Pre-fill suggestions: {JSON.stringify(preFillData.data.preFilledAnswers[currentStepData.id].suggestions)}</div>
-                              <div>Pre-fill confidence: {preFillData.data.preFilledAnswers[currentStepData.id].confidence}</div>
-                            </div>
-                          )}
-                        </div>
-                      )}
 
                       {/* Answer options */}
                       {(currentStepData.type === "select" || currentStepData.type === "multiselect") && (
                         <div className="space-y-2 sm:space-y-3">
+                          {/* AI Suggestions Section */}
+                          {cvSuggestions.aiSuggestions[currentStepData.id] && cvSuggestions.aiSuggestions[currentStepData.id].length > 0 && (
+                            <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-blue-400/10 to-purple-500/10 border border-blue-400/30">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Brain className="h-4 w-4 text-blue-400" />
+                                <span className="text-sm font-medium text-blue-100">AI Suggestions</span>
+                              </div>
+                              <p className="text-xs text-blue-300/80 mb-3">Based on your CV analysis</p>
+                              <div className="space-y-2">
+                                {cvSuggestions.aiSuggestions[currentStepData.id].map((suggestion, index) => {
+                                  const isSelected = currentValue === suggestion;
+                                  return (
+                                    <button
+                                      key={`ai-${index}`}
+                                      onClick={() => handleInputChange(suggestion)}
+                                      className={`w-full text-left p-2 rounded-lg transition-all duration-300 border ${
+                                        isSelected 
+                                          ? "border-blue-400 bg-blue-400/20 text-blue-100" 
+                                          : "border-blue-400/30 hover:border-blue-400/50 text-blue-200 hover:bg-blue-400/10"
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-sm">{suggestion}</span>
+                                        {isSelected && (
+                                          <CheckCircle className="h-4 w-4 text-blue-400" />
+                                        )}
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          
                           {/* Debug logging for select options */}
                           {console.log(`Rendering ${currentStepData.type} question:`, {
                             title: currentStepData.title,
@@ -854,55 +795,40 @@ export default function OnboardingPage() {
 
                       {currentStepData.type === "file" && (
                         <div>
-                          {/* CV Processing Status */}
-                          {isProcessingCV && (
-                            <div className="mb-4 p-4 bg-purple-500/10 border border-purple-400/30 rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <Loader2 className="h-5 w-5 text-purple-400 animate-spin" />
-                                <div>
-                                  <p className="text-purple-100 font-medium">Processing CV with AI...</p>
-                                  <p className="text-purple-300/80 text-sm">Extracting data and generating suggestions</p>
+                          {/* CV Upload Status Display */}
+                          {currentStepData.title.toLowerCase().includes('cv') && cvUploaded && (
+                            <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-cyan-400/10 to-blue-500/10 border border-cyan-400/30">
+                              <div className="flex items-center gap-2 text-green-400 mb-3">
+                                <CheckCircle className="h-4 w-4" />
+                                <span className="text-sm font-medium">CV uploaded and analyzed</span>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-[#0e2439]/60 rounded-lg p-3 text-center border border-cyan-400/20">
+                                  <div className="text-lg font-bold text-white">{Object.keys(cvSuggestions.autoFilled).length}</div>
+                                  <div className="text-xs text-cyan-300">Auto-filled</div>
+                                </div>
+                                <div className="bg-[#0e2439]/60 rounded-lg p-3 text-center border border-cyan-400/20">
+                                  <div className="text-lg font-bold text-white">{Object.keys(cvSuggestions.aiSuggestions).length}</div>
+                                  <div className="text-xs text-cyan-300">AI Suggestions</div>
                                 </div>
                               </div>
                             </div>
                           )}
-
-                          {/* CV Processing Error */}
-                          {cvProcessingError && (
-                            <div className="mb-4 p-4 bg-red-500/10 border border-red-400/30 rounded-lg">
-                              <div className="flex items-center gap-2 text-red-400">
-                                <X className="h-5 w-5" />
-                                <span className="font-medium">CV Processing Failed</span>
-                              </div>
-                              <p className="text-red-300 mt-2 text-sm">{cvProcessingError}</p>
-                            </div>
-                          )}
-
-                          {/* CV Processing Success */}
-                          {preFillData && currentStep === 1 && (
-                            <div className="mb-4 p-4 bg-green-500/10 border border-green-400/30 rounded-lg">
-                              <div className="flex items-center gap-2 text-green-400">
-                                <CheckCircle className="h-5 w-5" />
-                                <span className="font-medium">CV Processed Successfully!</span>
-                              </div>
-                              <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <p className="text-green-300/80">Auto-filled Questions</p>
-                                  <p className="text-green-100 font-medium">{preFillData.metadata?.autoFillCount || 0}</p>
-                                </div>
-                                <div>
-                                  <p className="text-green-300/80">AI Suggestions</p>
-                                  <p className="text-green-100 font-medium">{preFillData.metadata?.aiSuggestionsCount || 0}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {!uploadedFiles[currentStepData.id] || uploadedFiles[currentStepData.id].length === 0 ? (
+                          
+                          {/* File Upload Area */}
+                          {(!uploadedFiles[currentStepData.id] || uploadedFiles[currentStepData.id].length === 0) && !cvUploaded ? (
                             <div
                               onDrop={(e) => {
                                 e.preventDefault()
-                                handleFileUpload(e.dataTransfer.files)
+                                if (currentStepData.title.toLowerCase().includes('cv')) {
+                                  const files = e.dataTransfer.files
+                                  if (files.length > 0) {
+                                    handleCVUpload(files[0])
+                                  }
+                                } else {
+                                  handleFileUpload(e.dataTransfer.files)
+                                }
                               }}
                               onDragOver={(e) => {
                                 e.preventDefault()
@@ -914,36 +840,73 @@ export default function OnboardingPage() {
                             >
                               <input
                                 type="file"
-                                accept={currentStepData.fileTypes?.join(",")}
-                                multiple={Boolean(currentStepData.maxFiles && currentStepData.maxFiles > 1)}
-                                onChange={(e) => handleFileUpload(e.target.files)}
+                                accept={currentStepData.title.toLowerCase().includes('cv') ? ".pdf,.doc,.docx,.txt,.rtf,image/*" : currentStepData.fileTypes?.join(",")}
+                                multiple={currentStepData.title.toLowerCase().includes('cv') ? false : Boolean(currentStepData.maxFiles && currentStepData.maxFiles > 1)}
+                                onChange={(e) => {
+                                  if (currentStepData.title.toLowerCase().includes('cv')) {
+                                    if (e.target.files && e.target.files[0]) {
+                                      handleCVUpload(e.target.files[0])
+                                    }
+                                  } else {
+                                    handleFileUpload(e.target.files)
+                                  }
+                                }}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                disabled={isProcessingCV}
                               />
                               <div className="space-y-4 sm:space-y-6">
                                 <div className="mx-auto flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center">
-                                  {isProcessingCV ? (
-                                    <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 text-purple-400 animate-spin" />
-                                  ) : (
-                                    <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-                                  )}
+                                  <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                                 </div>
                                 <div>
-                                  <p className="text-lg sm:text-xl font-medium text-white mb-2">
-                                    {isProcessingCV ? 'Processing your CV...' : 'Drag and drop your file here'}
-                                  </p>
-                                  <p className="text-sm sm:text-base text-white">
-                                    {isProcessingCV ? 'Please wait while we analyze your document' : 'or click to browse'}
-                                  </p>
+                                  <p className="text-lg sm:text-xl font-medium text-white mb-2">Drag and drop your file here</p>
+                                  <p className="text-sm sm:text-base text-white">or click to browse</p>
                                   <p className="text-xs sm:text-sm text-cyan-300/80 mt-2">
-                                    {currentStepData.fileTypes?.join(", ")} files accepted
+                                    {currentStepData.title.toLowerCase().includes('cv') 
+                                      ? ".pdf, .doc, .docx files accepted" 
+                                      : `${currentStepData.fileTypes?.join(", ")} files accepted`
+                                    }
                                   </p>
                                 </div>
                               </div>
                             </div>
-                          ) : (
+                          )}
+                          
+                          {/* CV Upload Loading and Error States */}
+                          {currentStepData.title.toLowerCase().includes('cv') && (
+                            <>
+                              {isUploadingCV && (
+                                <div className="mt-4 flex items-center justify-center gap-2 text-cyan-300">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <span className="text-sm">Analyzing CV with AI...</span>
+                                </div>
+                              )}
+                              
+                              {cvUploadError && (
+                                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                                  <p className="text-sm text-red-300">{cvUploadError}</p>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          
+                          {/* File List Display */}
+                          {(uploadedFiles[currentStepData.id] && uploadedFiles[currentStepData.id].length > 0) || (currentStepData.title.toLowerCase().includes('cv') && cvUploaded) ? (
                             <div className="space-y-4 sm:space-y-6">
-                              {uploadedFiles[currentStepData.id].map((file, index) => (
+                              {/* Show CV upload success for CV steps */}
+                              {currentStepData.title.toLowerCase().includes('cv') && cvUploaded && (!uploadedFiles[currentStepData.id] || uploadedFiles[currentStepData.id].length === 0) && (
+                                <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 glass-card rounded-xl border border-green-400/20 bg-[#0e2439]/50 backdrop-blur-sm">
+                                  <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-xl bg-gradient-to-br from-green-400/20 to-green-500/20 border border-green-400/30 flex-shrink-0">
+                                    <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-400" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm sm:text-base lg:text-lg font-medium text-green-100">CV uploaded and analyzed</p>
+                                    <p className="text-xs sm:text-sm text-green-300/80">AI processing completed</p>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Show regular uploaded files */}
+                              {uploadedFiles[currentStepData.id] && uploadedFiles[currentStepData.id].map((file, index) => (
                                 <div key={index} className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 glass-card rounded-xl border border-cyan-400/20 bg-[#0e2439]/50 backdrop-blur-sm">
                                   <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 flex-shrink-0">
                                     <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400" />
@@ -1032,7 +995,7 @@ export default function OnboardingPage() {
             )}
 
             {/* Navigation */}
-            {currentStepData?.type !== "completion" && (
+            {currentStepData.type !== "completion" && (
               <div className="flex items-center justify-between mt-6 sm:mt-8 px-2">
                 <button
                   onClick={handlePrevious}
@@ -1059,12 +1022,10 @@ export default function OnboardingPage() {
                   ) : (
                     <>
                   <span className="hidden sm:inline">
-                        {currentStep === 0 ? "Continue" : 
-                         (currentStep - 1 === onboardingSteps.length - 2 ? "Review & Submit" : "Next")}
+                        {currentStep === onboardingSteps.length - 2 ? "Review & Submit" : "Next"}
                   </span>
                   <span className="sm:hidden">
-                        {currentStep === 0 ? "Continue" : 
-                         (currentStep - 1 === onboardingSteps.length - 2 ? "Review" : "Next")}
+                        {currentStep === onboardingSteps.length - 2 ? "Review" : "Next"}
                   </span>
                   <ArrowRight className="h-4 w-4" />
                     </>
@@ -1075,12 +1036,6 @@ export default function OnboardingPage() {
           </div>
         </div>
       </div>
-    </ProtectedRoute>
-=======
-    <div>
-      <h1>Onboarding Page</h1>
-      <p>Step {currentStep}</p>
     </div>
->>>>>>> 1d599c143b571d8aaa838dbcd3ff527e1b96f3e8
   )
 }
