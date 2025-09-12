@@ -236,15 +236,55 @@ const generateMaxFiles = (question: Question): number => {
 };
 
 export function transformQuestionsToSteps(questions: Question[]): OnboardingStep[] {
-  // Sort questions by step number and creation date
+  // Sort questions with specific priority: User type first, then CV upload, then others
   const sortedQuestions = questions
     .filter(q => q.status === "active")
     .sort((a, b) => {
+      // Check if questions are user type questions
+      const aIsUserType = a.text.toLowerCase().includes('student') && 
+                          a.text.toLowerCase().includes('professional');
+      const bIsUserType = b.text.toLowerCase().includes('student') && 
+                          b.text.toLowerCase().includes('professional');
+      
+      // Check if questions are CV upload questions
+      const aIsCV = a.type === "upload" && (
+        a.text.toLowerCase().includes('cv') || 
+        a.text.toLowerCase().includes('resume') ||
+        a.text.toLowerCase().includes('document')
+      );
+      const bIsCV = b.type === "upload" && (
+        b.text.toLowerCase().includes('cv') || 
+        b.text.toLowerCase().includes('resume') ||
+        b.text.toLowerCase().includes('document')
+      );
+      
+      // User type questions go first
+      if (aIsUserType && !bIsUserType) return -1;
+      if (!aIsUserType && bIsUserType) return 1;
+      
+      // CV upload questions go second
+      if (aIsCV && !bIsCV && !aIsUserType && !bIsUserType) return -1;
+      if (!aIsCV && bIsCV && !aIsUserType && !bIsUserType) return 1;
+      
+      // Then sort by step number and creation date
       if (a.step.stepNumber !== b.step.stepNumber) {
         return a.step.stepNumber - b.step.stepNumber;
       }
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
+
+  // Debug logging for question ordering
+  console.log("Question ordering:", {
+    totalQuestions: questions.length,
+    activeQuestions: questions.filter(q => q.status === "active").length,
+    sortedQuestions: sortedQuestions.map(q => ({
+      text: q.text,
+      type: q.type,
+      stepNumber: q.step.stepNumber,
+      isUserType: q.text.toLowerCase().includes('student') && q.text.toLowerCase().includes('professional'),
+      isCV: q.type === "upload" && (q.text.toLowerCase().includes('cv') || q.text.toLowerCase().includes('resume'))
+    }))
+  });
 
   const steps: OnboardingStep[] = sortedQuestions.map((question, index) => {
     const stepType = mapQuestionType(question.type);
@@ -255,7 +295,12 @@ export function transformQuestionsToSteps(questions: Question[]): OnboardingStep
       subtitle: generateSubtitle(question),
       icon: getStepIcon(question.step.stepName),
       type: stepType,
-      options: question.type === "multiple-choice" ? question.options : 
+      options: question.type === "multiple-choice" ? 
+               (question.options && question.options.length > 0 && 
+                question.options[0].includes(' ') && 
+                question.text.toLowerCase().includes('student') && 
+                question.text.toLowerCase().includes('professional') ? 
+                ["Student", "Professional"] : question.options) : 
                question.type === "yes/no" ? ["Yes", "No"] : undefined,
       placeholder: generatePlaceholder(question),
       required: !question.optional,
