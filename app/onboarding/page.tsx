@@ -50,6 +50,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [skippedQuestions, setSkippedQuestions] = useState<Set<string>>(new Set())
 
   const [preFillData, setPreFillData] = useState<PreFillResponse | null>(null)
   const [isProcessingCV, setIsProcessingCV] = useState(false)
@@ -128,11 +129,9 @@ export default function OnboardingPage() {
   // Auto-redirect to preview when completion step is reached
   useEffect(() => {
     if (onboardingSteps.length > 0 && currentStep < onboardingSteps.length && onboardingSteps[currentStep]?.type === "completion") {
-
       const timer = setTimeout(() => {
-        handleGoToPreview()
-      }, 2000) // 2 second delay to show the completion screen
-      
+        handleSaveResponses();
+      }, 1500)
       return () => clearTimeout(timer)
     }
   }, [onboardingSteps.length, currentStep])
@@ -258,6 +257,22 @@ export default function OnboardingPage() {
 //           await handleGoToPreview()
 //         }
 
+  }
+
+  const handleSkip = () => {
+    const step = onboardingSteps[currentStep]
+    if (!step || step.type === 'completion') return
+    setSkippedQuestions(prev => new Set(prev).add(step.id))
+    if (currentStep < onboardingSteps.length - 2) {
+      setIsAnimating(true)
+      setTimeout(() => {
+        setCurrentStep(currentStep + 1)
+        setIsAnimating(false)
+      }, 120)
+    } else {
+      // If skipping last regular question go to preview
+      handleGoToPreview()
+    }
   }
 
   const handleGoToPreview = async () => {
@@ -401,16 +416,22 @@ export default function OnboardingPage() {
       const result = await saveUserResponses(responses, allFiles, token)
       
       if (result.success) {
-
-        
+        // If backend now returns recommendedCourses with final submission, persist it
+        const rc = (result as any)?.data?.recommendedCourses
+        if (rc && Array.isArray(rc)) {
+          try {
+            localStorage.setItem('recommendedCourses', JSON.stringify(rc.slice(0,4)))
+          } catch (e) {
+            console.warn('Failed to persist recommended courses after submission', e)
+          }
+        }
         // Update user progress
-            updateUser({ 
+        updateUser({ 
           ...user, 
           hasCompletedOnboarding: true
         })
-        
-        // Redirect to analyzing page
-        router.push('/analyzing')
+        // Redirect directly to dashboard to show roadmap cards
+        router.push('/dashboard')
       } else {
         throw new Error(result.message || 'Failed to save responses')
       }
@@ -508,6 +529,15 @@ export default function OnboardingPage() {
       
       if (result.success) {
         setPreFillData(result)
+        // Persist recommended courses for dashboard roadmap
+        const rc = (result as any)?.data?.recommendedCourses
+        if (rc && Array.isArray(rc)) {
+          try {
+            localStorage.setItem('recommendedCourses', JSON.stringify(rc.slice(0,4)))
+          } catch (e) {
+            console.warn('Failed to persist recommended courses', e)
+          }
+        }
         
         // Apply pre-filled answers to form data
         if (result.data?.preFilledAnswers) {
@@ -714,10 +744,10 @@ export default function OnboardingPage() {
                       
 
                       {/* Answer options */}
-                      {(currentStepData.type === "select" || currentStepData.type === "multiselect") && (
+                      {((currentStepData.type === "select" || currentStepData.type === "multiselect" || currentStepData.type === 'yesno')) && (
                         <div className="space-y-2 sm:space-y-3">
                           {/* Fallback: if no options, render text input */}
-                          {(!currentStepData.options || currentStepData.options.length === 0) && (
+                          {((!currentStepData.options || currentStepData.options.length === 0) && currentStepData.type !== 'yesno') && (
                             <Input
                               type="text"
                               placeholder={currentStepData.placeholder || "Enter your answer..."}
@@ -727,7 +757,35 @@ export default function OnboardingPage() {
                               className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg h-12 sm:h-14 text-left"
                             />
                           )}
-                          {currentStepData.options && currentStepData.options.map((option) => {
+                          {/* Yes/No default options if missing */}
+                          {currentStepData.type === 'yesno' && (!currentStepData.options || currentStepData.options.length === 0) && (
+                            <div className="space-y-2">
+                              {['Yes','No'].map(option => {
+                                const isSelected = currentValue === option;
+                                return (
+                                  <button
+                                    key={option}
+                                    onClick={() => handleSelectOption(option)}
+                                    className={`w-full glass-card p-3 sm:p-4 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
+                                      isSelected 
+                                        ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
+                                        : "border-cyan-400/30 hover:border-cyan-400/50"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm sm:text-base lg:text-lg text-cyan-100 font-medium pr-2">{option}</span>
+                                      {isSelected && (
+                                        <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-cyan-400 flex items-center justify-center flex-shrink-0">
+                                          <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          )}
+                          {currentStepData.options && currentStepData.options.length > 0 && currentStepData.options.map((option) => {
                             let isSelected = false
                             
                             if (currentStepData.type === "multiselect") {
@@ -768,11 +826,11 @@ export default function OnboardingPage() {
                         </div>
                       )}
 
-                      {currentStepData.type === "text" && (
+          {currentStepData.type === "text" && (
                         <div>
                           <Input
                             type="text"
-                            placeholder={currentStepData.placeholder}
+            placeholder={currentStepData.placeholder || 'Enter your answer...'}
                             value={(currentValue as string) || ""}
                             onChange={(e) => handleInputChange(e.target.value)}
                             onKeyPress={handleKeyPress}
@@ -999,7 +1057,7 @@ export default function OnboardingPage() {
 
             {currentStepData?.type !== "completion" && (
 
-              <div className="flex items-center justify-between mt-6 sm:mt-8 px-2">
+              <div className="flex items-center justify-between mt-6 sm:mt-8 px-2 gap-2">
                 <button
                   onClick={handlePrevious}
                   disabled={currentStep === 0}
@@ -1010,7 +1068,14 @@ export default function OnboardingPage() {
                   <span className="hidden sm:inline">Previous</span>
                   <span className="sm:hidden">Back</span>
                 </button>
-
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={handleSkip}
+                    className="text-xs sm:text-sm px-3 py-2 rounded-md text-cyan-200 hover:text-white hover:bg-cyan-400/10 transition-colors"
+                  >
+                    Skip
+                  </button>
                 <button 
                   onClick={handleNext} 
                   disabled={!isValid || isAnimating || isSaving} 
@@ -1038,6 +1103,7 @@ export default function OnboardingPage() {
                     </>
                   )}
                 </button>
+                </div>
               </div>
             )}
           </div>
