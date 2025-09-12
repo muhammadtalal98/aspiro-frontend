@@ -1,4 +1,4 @@
-interface Question {
+export interface Question {
   _id: string;
   text: string;
   type: "text" | "yes/no" | "multiple-choice" | "upload" | "link";
@@ -130,4 +130,70 @@ export async function addMultipleQuestions(questions: AddQuestionRequest[], toke
   }
 }
 
-export type { Question, AddQuestionRequest, AddQuestionsResponse };
+// --- Update & Delete (Soft) ---
+export interface UpdateQuestionRequest {
+  text?: string;
+  options?: string[]; // Only for multiple-choice
+  status?: 'active' | 'inactive';
+}
+
+export interface UpdateQuestionResponse {
+  success: boolean;
+  message: string;
+  data: Question;
+}
+
+export async function updateQuestion(id: string, updates: UpdateQuestionRequest, token: string): Promise<UpdateQuestionResponse> {
+  try {
+    const response = await fetch(getApiUrl(`/questions/${id}`), {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to update question: ${response.status} ${response.statusText}`);
+    }
+
+    const data: UpdateQuestionResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating question:', error);
+    throw error;
+  }
+}
+
+export interface DeleteQuestionResponse {
+  success: boolean;
+  message: string;
+  data: { id: string; status: 'inactive' };
+}
+
+export async function deleteQuestion(id: string, token: string): Promise<DeleteQuestionResponse> {
+  try {
+    const response = await fetch(getApiUrl(`/questions/${id}`), {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to delete question: ${response.status} ${response.statusText}`);
+    }
+
+    const data: DeleteQuestionResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error deleting question:', error);
+    throw error;
+  }
+}
+
+// Individual interfaces are already exported; aggregated export removed to avoid duplication errors.

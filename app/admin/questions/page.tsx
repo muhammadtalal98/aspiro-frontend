@@ -14,6 +14,8 @@ import {
   Filter,
   Eye,
   Plus,
+  Pencil,
+  Trash2
 } from "lucide-react"
 import AdminOnly from "../AdminOnly"
 import { AdminSidebar } from "@/components/admin-sidebar"
@@ -25,7 +27,10 @@ import {
   AddQuestionRequest, 
   AddQuestionsResponse, 
   fetchQuestions, 
-  addQuestion
+  addQuestion,
+  updateQuestion,
+  deleteQuestion,
+  UpdateQuestionRequest
 } from "@/lib/questions-api"
 
 type QuestionCategory = "student" | "professional"
@@ -47,7 +52,11 @@ export default function QuestionsManagement() {
   // Dialog state
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [isViewOpen, setIsViewOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
+  const [editForm, setEditForm] = useState<UpdateQuestionRequest & { optionsText?: string }>({})
+  const [isMutating, setIsMutating] = useState(false)
 
   // Forms
   const [singleQuestionForm, setSingleQuestionForm] = useState<AddQuestionRequest>({
@@ -191,6 +200,68 @@ export default function QuestionsManagement() {
     }
   }
 
+  const openEdit = (q: Question) => {
+    setSelectedQuestion(q)
+    setEditForm({
+      text: q.text,
+      status: q.status,
+      options: q.type === 'multiple-choice' ? q.options : undefined,
+      optionsText: q.type === 'multiple-choice' ? q.options.join('\n') : undefined
+    })
+    setIsEditOpen(true)
+  }
+
+  const handleUpdateQuestion = async () => {
+    if (!selectedQuestion) return
+    if (editForm.text !== undefined && !editForm.text.trim()) {
+      toast({ title: 'Text required', description: 'Question text cannot be empty.' })
+      return
+    }
+    if (editForm.optionsText !== undefined) {
+      const opts = editForm.optionsText.split('\n').map(o => o.trim()).filter(Boolean)
+      if (opts.length === 0) {
+        toast({ title: 'Options required', description: 'Provide at least one option.' })
+        return
+      }
+      editForm.options = opts
+    }
+    try {
+      setIsMutating(true)
+      const token = getToken()
+      if (!token) {
+        toast({ title: 'Auth required', description: 'Please login again.' })
+        return
+      }
+      const payload: UpdateQuestionRequest = {}
+      if (editForm.text !== undefined) payload.text = editForm.text.trim()
+      if (editForm.options) payload.options = editForm.options
+      if (editForm.status) payload.status = editForm.status
+      const res = await updateQuestion(selectedQuestion._id, payload, token)
+      setQuestions(prev => prev.map(q => q._id === res.data._id ? res.data : q))
+      toast({ title: 'Updated', description: res.message })
+      setIsEditOpen(false)
+    } catch (e) {
+      toast({ title: 'Update failed', description: e instanceof Error ? e.message : 'Try again.' })
+    } finally {
+      setIsMutating(false)
+    }
+  }
+
+  const openDelete = (q: Question) => { setSelectedQuestion(q); setIsDeleteOpen(true) }
+  const handleDeleteQuestion = async () => {
+    if (!selectedQuestion) return
+    try {
+      setIsMutating(true)
+      const token = getToken()
+      if (!token) { toast({ title: 'Auth required', description: 'Please login.' }); return }
+      const res = await deleteQuestion(selectedQuestion._id, token)
+      setQuestions(prev => prev.map(q => q._id === res.data.id ? { ...q, status: 'inactive' } : q))
+      toast({ title: 'Deleted', description: res.message })
+      setIsDeleteOpen(false)
+    } catch (e) {
+      toast({ title: 'Delete failed', description: e instanceof Error ? e.message : 'Try again.' })
+    } finally { setIsMutating(false) }
+  }
 
   const resetSingleQuestionForm = () => {
     setSingleQuestionForm({
@@ -365,6 +436,12 @@ export default function QuestionsManagement() {
                               <NeuroButton variant="ghost" size="sm" title="View" onClick={() => { setSelectedQuestion(question); setIsViewOpen(true) }} className="text-cyan-100 hover:bg-cyan-400/10 p-1 sm:p-2">
                                 <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                               </NeuroButton>
+                              <NeuroButton variant="ghost" size="sm" title="Edit" onClick={() => openEdit(question)} className="text-cyan-100 hover:bg-cyan-400/10 p-1 sm:p-2">
+                                <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
+                              </NeuroButton>
+                              <NeuroButton variant="ghost" size="sm" title="Delete" onClick={() => openDelete(question)} className="text-red-300 hover:bg-red-500/10 p-1 sm:p-2">
+                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                              </NeuroButton>
                             </div>
                           </td>
                         </tr>
@@ -534,8 +611,8 @@ export default function QuestionsManagement() {
                       onCheckedChange={(checked) => setSingleQuestionForm({ 
                         ...singleQuestionForm, 
                         documents: { 
-                          ...singleQuestionForm.documents, 
-                          cv: !!checked 
+                          cv: !!checked,
+                          optionalDocs: singleQuestionForm.documents?.optionalDocs || []
                         } 
                       })}
                       className="border-cyan-400/30 data-[state=checked]:bg-cyan-400"
@@ -600,7 +677,7 @@ export default function QuestionsManagement() {
                         <div>
                           <span className="text-white/60">Optional Documents:</span>
                           <ul className="text-white/80 space-y-1 mt-1">
-                            {selectedQuestion.documents.optionalDocs.map((doc, index) => (
+                            {selectedQuestion.documents.optionalDocs.map((doc: {type: string; required: boolean}, index: number) => (
                               <li key={index} className="text-sm">
                                 {doc.type} {doc.required ? "(Required)" : "(Optional)"}
                               </li>
@@ -615,7 +692,7 @@ export default function QuestionsManagement() {
                   <div className="pt-2">
                     <span className="block text-white/70 mb-2">Options</span>
                     <ul className="text-white/80 space-y-1">
-                      {selectedQuestion.options.map((option, index) => (
+                      {selectedQuestion.options.map((option: string, index: number) => (
                         <li key={index} className="text-sm">{index + 1}. {option}</li>
                       ))}
                     </ul>
@@ -636,6 +713,78 @@ export default function QuestionsManagement() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Modal */}
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent className="bg-[#0e2439]/90 backdrop-blur-xl border border-cyan-400/30 max-w-md mx-4 sm:mx-auto">
+            <DialogHeader>
+              <DialogTitle className="text-white text-lg">Edit Question</DialogTitle>
+            </DialogHeader>
+            {selectedQuestion && (
+              <div className="space-y-4 text-sm">
+                <div>
+                  <label className="block text-white/70 mb-1">Text</label>
+                  <Textarea
+                    value={editForm.text || ''}
+                    onChange={(e) => setEditForm(f => ({ ...f, text: e.target.value }))}
+                    className="bg-[#0e2439]/50 border-cyan-400/30 text-white resize-none min-h-24"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-white/70 mb-1">Status</label>
+                    <select
+                      value={editForm.status || selectedQuestion.status}
+                      onChange={(e) => setEditForm(f => ({ ...f, status: e.target.value as 'active' | 'inactive' }))}
+                      className="w-full px-3 py-2 bg-[#0e2439]/50 border border-cyan-400/30 rounded-md text-white"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-white/70 mb-1">Type</label>
+                    <Input disabled value={selectedQuestion.type} className="bg-[#0e2439]/50 border-cyan-400/30 text-white text-sm" />
+                  </div>
+                </div>
+                {selectedQuestion.type === 'multiple-choice' && (
+                  <div>
+                    <label className="block text-white/70 mb-1">Options (one per line)</label>
+                    <Textarea
+                      value={editForm.optionsText || ''}
+                      onChange={(e) => setEditForm(f => ({ ...f, optionsText: e.target.value }))}
+                      className="bg-[#0e2439]/50 border-cyan-400/30 text-white resize-none min-h-24"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <NeuroButton variant="outline" onClick={() => setIsEditOpen(false)} className="border-cyan-400/30 text-cyan-100 w-full sm:w-auto text-sm">Cancel</NeuroButton>
+              <NeuroButton onClick={handleUpdateQuestion} disabled={isMutating} className="bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30 w-full sm:w-auto text-sm">
+                {isMutating ? 'Saving...' : 'Save Changes'}
+              </NeuroButton>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirm */}
+        <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+          <AlertDialogContent className="bg-[#0e2439]/90 backdrop-blur-xl border border-cyan-400/30">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white">Delete Question</AlertDialogTitle>
+              <AlertDialogDescription className="text-cyan-200/70 text-sm">
+                This will mark the question as inactive. You can re-activate it later by editing it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="border-cyan-400/30 text-cyan-100">Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteQuestion} disabled={isMutating} className="bg-red-500/20 border border-red-500/40 text-red-200 hover:bg-red-500/30">
+                {isMutating ? 'Deleting...' : 'Confirm'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         </div>
       </div>
     </AdminOnly>
