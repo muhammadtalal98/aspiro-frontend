@@ -1,5 +1,4 @@
 "use client"
-<<<<<<< HEAD
 import { useEffect, useState } from "react"
 import type React from "react"
 
@@ -602,16 +601,9 @@ export default function OnboardingPage() {
       handleNext()
     }
   }
-=======
-import { useState } from "react"
-
-export default function OnboardingPage() {
-  const [currentStep, setCurrentStep] = useState(0)
->>>>>>> 1d599c143b571d8aaa838dbcd3ff527e1b96f3e8
 
 
   return (
-<<<<<<< HEAD
     <ProtectedRoute requireAuth={true} requireOnboarding={true}>
       <div className="min-h-screen bg-[#0e2439] flex flex-col relative overflow-hidden">
         {/* Animated background particles - reduced on mobile for performance */}
@@ -1076,11 +1068,5 @@ export default function OnboardingPage() {
         </div>
       </div>
     </ProtectedRoute>
-=======
-    <div>
-      <h1>Onboarding Page</h1>
-      <p>Step {currentStep}</p>
-    </div>
->>>>>>> 1d599c143b571d8aaa838dbcd3ff527e1b96f3e8
   )
 }
