@@ -34,7 +34,6 @@ import { fetchQuestions } from "@/lib/questions-api"
 import { transformQuestionsToSteps, OnboardingStep } from "@/lib/question-transformer"
 import { saveUserResponses, UserResponse } from "@/lib/user-response-api"
 import { preFillQuestions, PreFillResponse, applyPreFilledAnswers } from "@/lib/prefill-api"
-import PreFillDisplay from "@/components/PreFillDisplay"
 
 
 export default function OnboardingPage() {
@@ -87,7 +86,6 @@ export default function OnboardingPage() {
   // Auto-redirect to preview when completion step is reached
   useEffect(() => {
     if (onboardingSteps.length > 0 && currentStep < onboardingSteps.length && onboardingSteps[currentStep]?.type === "completion") {
-      console.log("Completion step reached, redirecting to preview in 2 seconds...")
       const timer = setTimeout(() => {
         handleGoToPreview()
       }, 2000) // 2 second delay to show the completion screen
@@ -163,29 +161,19 @@ export default function OnboardingPage() {
   const handleNext = async () => {
     const step = onboardingSteps[currentStep]
     
-    console.log("HandleNext called:", {
-      currentStep: currentStep,
-      totalSteps: totalSteps,
-      isLastRegularStep: currentStep === onboardingSteps.length - 2,
-      stepTitle: step?.title,
-      isValid: isValid
-    })
     
     // Check if current step is valid
     if (!isValid) {
-      console.log("Step is not valid, not proceeding")
       return
     }
 
     if (currentStep < onboardingSteps.length - 2) {
-      console.log("Moving to next step:", currentStep + 1)
       setIsAnimating(true)
       setTimeout(() => {
         setCurrentStep(currentStep + 1)
         setIsAnimating(false)
       }, 150)
     } else {
-      console.log("Last regular question reached, starting preview flow")
       // Last regular question - save data and redirect to preview
       await handleGoToPreview()
     }
@@ -193,7 +181,6 @@ export default function OnboardingPage() {
 
   const handleGoToPreview = async () => {
     try {
-      console.log("Starting preview flow...")
       
       // Save current data to localStorage for preview
       localStorage.setItem("onboardingFormData", JSON.stringify(formData))
@@ -224,7 +211,6 @@ export default function OnboardingPage() {
       })
       
       // Redirect to preview page
-      console.log("Redirecting to /onboarding/preview")
       router.push('/onboarding/preview')
     } catch (error) {
       console.error("Error preparing preview data:", error)
@@ -332,7 +318,6 @@ export default function OnboardingPage() {
       const result = await saveUserResponses(responses, allFiles, token)
       
       if (result.success) {
-        console.log('Responses saved successfully:', result)
         
         // Update user progress
             updateUser({ 
@@ -372,39 +357,11 @@ export default function OnboardingPage() {
   }
 
 
-  const handleAcceptAnswer = (questionId: string, answer: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [questionId]: answer
-    }))
-  }
-
-  const handleAcceptSuggestion = (questionId: string, suggestion: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [questionId]: suggestion
-    }))
-  }
-
-  const handleEditAnswer = (questionId: string, answer: any) => {
-    // This will be handled by the existing input change handlers
-    setFormData(prev => ({
-      ...prev,
-      [questionId]: answer
-    }))
-  }
 
   const handleSelectOption = (option: string) => {
     const step = onboardingSteps[currentStep]
     if (!step) return
     
-    console.log("handleSelectOption called:", {
-      option,
-      currentStep,
-      stepType: step.type,
-      stepOptions: step.options,
-      isYesNo: step.options?.length === 2 && step.options.includes("Yes") && step.options.includes("No")
-    })
     
     if (step.type === "multiselect") {
       const currentValues = (formData[step.id] as string[]) || []
@@ -415,10 +372,8 @@ export default function OnboardingPage() {
     } else if (step.options?.length === 2 && 
                step.options.includes("Yes") && step.options.includes("No")) {
       // This is a yes/no question - store as string
-      console.log("Yes/No question - storing as string:", { option })
       handleInputChange(option)
     } else {
-      console.log("Regular select question - storing as string:", { option })
       handleInputChange(option)
     }
   }
@@ -431,14 +386,6 @@ export default function OnboardingPage() {
     
     const fileArray = Array.from(files)
     
-    console.log(`File upload for step "${step.title}":`, {
-      stepId: step.id,
-      currentStep: currentStep,
-      stepType: step.type,
-      files: fileArray,
-      fileNames: fileArray.map(f => f.name),
-      fileSizes: fileArray.map(f => f.size)
-    });
     
     setUploadedFiles(prev => ({
       ...prev,
@@ -448,22 +395,13 @@ export default function OnboardingPage() {
     // Check if this is a CV upload step (should be step 1 after user type question)
     // Only process main CV upload, not optional supporting documents
     const isCVUpload = currentStep === 1 && step.type === "file" && 
-                      (step.title.toLowerCase().includes('cv') || 
-                       step.title.toLowerCase().includes('resume') ||
-                       (step.title.toLowerCase().includes('most recent') && step.title.toLowerCase().includes('cv')) ||
-                       step.stepName.toLowerCase().includes('professional'))
+                      (step.title.toLowerCase().includes('most recent cv') ||
+                       step.title.toLowerCase().includes('please upload your most recent') ||
+                       (step.title.toLowerCase().includes('cv') && step.title.toLowerCase().includes('pdf') && !step.title.toLowerCase().includes('optional')) ||
+                       (step.title.toLowerCase().includes('resume') && step.title.toLowerCase().includes('pdf') && !step.title.toLowerCase().includes('optional')))
 
-    console.log('CV upload detection:', {
-      currentStep,
-      stepType: step.type,
-      stepTitle: step.title,
-      stepName: step.stepName,
-      isCVUpload,
-      hasFiles: fileArray.length > 0
-    });
 
     if (isCVUpload && fileArray.length > 0) {
-      console.log('Processing CV upload...');
       await processCVAndPreFill(fileArray)
     }
   }
@@ -473,7 +411,6 @@ export default function OnboardingPage() {
       setIsProcessingCV(true)
       setCvProcessingError(null)
 
-      console.log('Processing CV for pre-filling questions...')
       
       const result = await preFillQuestions(cvFiles, getToken())
       
@@ -482,40 +419,19 @@ export default function OnboardingPage() {
         
         // Apply pre-filled answers to form data
         if (result.data?.preFilledAnswers) {
-          console.log('Applying pre-filled answers:', {
-            preFilledAnswers: result.data.preFilledAnswers,
-            onboardingStepsCount: onboardingSteps.length,
-            onboardingSteps: onboardingSteps.map(step => ({ id: step.id, title: step.title }))
-          });
           
           const preFilledFormData = applyPreFilledAnswers(
             result.data.preFilledAnswers,
             onboardingSteps
           )
           
-          console.log('Pre-filled form data generated:', preFilledFormData);
-          console.log('Auto-fill vs AI suggestions breakdown:', {
-            autoFillAnswers: Object.entries(result.data.preFilledAnswers).filter(([id, answer]) => answer.type === 'auto-fill'),
-            aiSuggestionsAnswers: Object.entries(result.data.preFilledAnswers).filter(([id, answer]) => answer.type === 'ai-suggestions'),
-            totalAnswers: Object.keys(result.data.preFilledAnswers).length
-          });
           
           setFormData(prev => {
             const updated = { ...prev, ...preFilledFormData };
-            console.log('Updated form data:', updated);
-            console.log('Previous form data:', prev);
-            console.log('New pre-filled data added:', preFilledFormData);
             return updated;
           })
         }
         
-        console.log('CV processing completed successfully:', {
-          autoFillCount: result.metadata?.autoFillCount || 0,
-          aiSuggestionsCount: result.metadata?.aiSuggestionsCount || 0,
-          totalPreFilledAnswers: Object.keys(result.data?.preFilledAnswers || {}).length,
-          preFilledQuestionIds: Object.keys(result.data?.preFilledAnswers || {}),
-          preFilledAnswers: result.data?.preFilledAnswers
-        })
       } else {
         throw new Error(result.message || 'Failed to process CV')
       }
@@ -561,13 +477,6 @@ export default function OnboardingPage() {
       const files = uploadedFiles[currentStepData.id]
       const hasFiles = files && files.length > 0
       
-      // Debug logging for file validation
-      console.log(`File validation for "${currentStepData.title}":`, {
-        files: files,
-        filesLength: files?.length || 0,
-        hasFiles: hasFiles,
-        required: currentStepData.required
-      });
       
       return hasFiles
     }
@@ -580,21 +489,6 @@ export default function OnboardingPage() {
     )
   })() || false
   
-    // Debug logging for current step
-    console.log("Current step info:", {
-      currentStep: currentStep,
-      totalSteps: totalSteps,
-      onboardingStepIndex: currentStep,
-      isLastRegularStep: currentStep === onboardingSteps.length - 2,
-      isCompletionStep: currentStep === onboardingSteps.length - 1,
-      stepTitle: currentStepData?.title,
-      stepType: currentStepData?.type,
-      isRequired: currentStepData?.required,
-      isOptional: !currentStepData?.required,
-      isUserTypeQuestion: currentStepData?.title?.toLowerCase().includes('student') && currentStepData?.title?.toLowerCase().includes('professional'),
-      isCVUploadQuestion: currentStep === 1 && currentStepData?.type === "file",
-      isValid: isValid
-    })
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && isValid && currentStepData?.type !== "textarea") {
@@ -710,51 +604,11 @@ export default function OnboardingPage() {
                         )}
                       </div>
 
-                      {/* Pre-fill Display */}
-                      {preFillData?.data?.preFilledAnswers?.[currentStepData.id] && (
-                        <PreFillDisplay
-                          questionId={currentStepData.id}
-                          questionText={currentStepData.title}
-                          questionType={preFillData.data.preFilledAnswers[currentStepData.id].metadata.questionType}
-                          preFillAnswer={preFillData.data.preFilledAnswers[currentStepData.id]}
-                          currentValue={currentValue}
-                          onAcceptAnswer={handleAcceptAnswer}
-                          onAcceptSuggestion={handleAcceptSuggestion}
-                          onEditAnswer={handleEditAnswer}
-                        />
-                      )}
                       
-                      {/* Debug: Show current value and pre-fill data */}
-                      {process.env.NODE_ENV === 'development' && (
-                        <div className="mt-4 p-3 bg-gray-800/50 border border-gray-600 rounded text-xs text-gray-300">
-                          <div>Question ID: {currentStepData.id}</div>
-                          <div>Required: {currentStepData.required ? 'Yes' : 'No'}</div>
-                          <div>Optional: {!currentStepData.required ? 'Yes' : 'No'}</div>
-                          <div>Current Value: {JSON.stringify(currentValue)}</div>
-                          <div>Form Data for this question: {JSON.stringify(formData[currentStepData.id])}</div>
-                          <div>Pre-fill available: {preFillData?.data?.preFilledAnswers?.[currentStepData.id] ? 'Yes' : 'No'}</div>
-                          <div>Total pre-fill answers: {Object.keys(preFillData?.data?.preFilledAnswers || {}).length}</div>
-                          <div>Available pre-fill IDs: {Object.keys(preFillData?.data?.preFilledAnswers || {}).join(', ')}</div>
-                          {preFillData?.data?.preFilledAnswers?.[currentStepData.id] && (
-                            <div>
-                              <div>Pre-fill answer: {JSON.stringify(preFillData.data.preFilledAnswers[currentStepData.id].answer)}</div>
-                              <div>Pre-fill type: {preFillData.data.preFilledAnswers[currentStepData.id].type}</div>
-                              <div>Pre-fill suggestions: {JSON.stringify(preFillData.data.preFilledAnswers[currentStepData.id].suggestions)}</div>
-                              <div>Pre-fill confidence: {preFillData.data.preFilledAnswers[currentStepData.id].confidence}</div>
-                            </div>
-                          )}
-                        </div>
-                      )}
 
                       {/* Answer options */}
                       {(currentStepData.type === "select" || currentStepData.type === "multiselect") && (
                         <div className="space-y-2 sm:space-y-3">
-                          {/* Debug logging for select options */}
-                          {console.log(`Rendering ${currentStepData.type} question:`, {
-                            title: currentStepData.title,
-                            options: currentStepData.options,
-                            optionsLength: currentStepData.options?.length
-                          })}
                           {currentStepData.options?.map((option) => {
                             let isSelected = false
                             
@@ -770,15 +624,6 @@ export default function OnboardingPage() {
                               isSelected = currentValue === option
                             }
                             
-                            // Debug logging for selection state
-                            console.log(`Option "${option}" selection state:`, {
-                              currentValue,
-                              currentValueType: typeof currentValue,
-                              isSelected,
-                              isYesNo: currentStepData.options?.length === 2 && 
-                                       currentStepData.options.includes("Yes") && 
-                                       currentStepData.options.includes("No")
-                            })
                             
                             return (
                               <button

@@ -145,11 +145,6 @@ export async function preFillQuestions(
       formData.append('files', file);
     });
 
-    console.log('Pre-filling questions with documents:', {
-      filesCount: files.length,
-      fileNames: files.map(f => f.name),
-      fileSizes: files.map(f => f.size)
-    });
 
     const response = await fetch(getApiUrl('/user-response/prefill'), {
       method: 'POST',
@@ -167,13 +162,6 @@ export async function preFillQuestions(
 
     const data: PreFillResponse = await response.json();
     
-    console.log('Pre-fill processing completed:', {
-      success: data.success,
-      message: data.message,
-      autoFillCount: data.metadata?.autoFillCount || 0,
-      aiSuggestionsCount: data.metadata?.aiSuggestionsCount || 0,
-      noMatchCount: data.metadata?.noMatchCount || 0
-    });
 
     return data;
   } catch (error) {
@@ -195,18 +183,12 @@ export function applyPreFilledAnswers(
   const formData: Record<string, any> = {};
   
   Object.entries(preFilledAnswers).forEach(([questionId, preFillAnswer]) => {
-    console.log(`Processing pre-fill answer for question ${questionId}:`, preFillAnswer);
     
     // Handle both _id (from backend) and id (from onboarding steps)
     const question = questions.find(q => q._id === questionId || q.id === questionId);
     if (!question) {
-      console.log(`Question not found for ID: ${questionId}`, {
-        availableIds: questions.map(q => ({ _id: q._id, id: q.id, title: q.title }))
-      });
       return;
     }
-    
-    console.log(`Found question: ${question.title} (ID: ${question.id})`);
 
     // Use the correct ID field for form data (id for onboarding steps, _id for questions)
     const formDataKey = question.id || questionId;
@@ -216,7 +198,6 @@ export function applyPreFilledAnswers(
         if (preFillAnswer.answer) {
           // For auto-fill, directly use the answer
           formData[formDataKey] = preFillAnswer.answer;
-          console.log(`Auto-filled question: ${question.title} with answer: ${preFillAnswer.answer}`);
         }
         break;
         
@@ -224,11 +205,9 @@ export function applyPreFilledAnswers(
         // For AI suggestions, use the direct answer
         if (preFillAnswer.answer) {
           formData[formDataKey] = preFillAnswer.answer;
-          console.log(`Auto-filled question: ${question.title} with AI answer: ${preFillAnswer.answer}`);
         }
         // Store the answer for potential display
         formData[`${formDataKey}_aiAnswer`] = preFillAnswer.answer || '';
-        console.log(`AI answer for question: ${question.title}`, preFillAnswer.answer);
         break;
     }
   });

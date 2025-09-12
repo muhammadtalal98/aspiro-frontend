@@ -43,18 +43,6 @@ export async function saveUserResponses(
       formData.append('files', file);
     });
 
-    console.log('Saving user responses:', {
-      responsesCount: responses.length,
-      filesCount: files.length,
-      responses: responses.map(r => ({
-        questionId: r.questionId,
-        hasAnswer: !!(r.answerText || r.answerChoice || r.answerLink || r.files),
-        answerType: r.answerText ? 'text' : 
-                   r.answerChoice ? 'choice' : 
-                   r.answerLink ? 'link' : 
-                   r.files ? 'files' : 'none'
-      }))
-    });
 
     const response = await fetch(getApiUrl('/user-response/save'), {
       method: 'POST',
@@ -72,12 +60,6 @@ export async function saveUserResponses(
 
     const data: SaveUserResponseResponse = await response.json();
     
-    console.log('User responses saved successfully:', {
-      success: data.success,
-      message: data.message,
-      responsesSaved: data.data?.length || 0,
-      filesDeleted: data.cleanup?.filesDeleted || 0
-    });
 
     return data;
   } catch (error) {

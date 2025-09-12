@@ -246,16 +246,18 @@ export function transformQuestionsToSteps(questions: Question[]): OnboardingStep
       const bIsUserType = b.text.toLowerCase().includes('student') && 
                           b.text.toLowerCase().includes('professional');
       
-      // Check if questions are CV upload questions
+      // Check if questions are CV upload questions (main CV, not optional documents)
       const aIsCV = a.type === "upload" && (
-        a.text.toLowerCase().includes('cv') || 
-        a.text.toLowerCase().includes('resume') ||
-        a.text.toLowerCase().includes('document')
+        a.text.toLowerCase().includes('most recent cv') ||
+        a.text.toLowerCase().includes('please upload your most recent') ||
+        (a.text.toLowerCase().includes('cv') && a.text.toLowerCase().includes('pdf') && !a.text.toLowerCase().includes('optional')) ||
+        (a.text.toLowerCase().includes('resume') && a.text.toLowerCase().includes('pdf') && !a.text.toLowerCase().includes('optional'))
       );
       const bIsCV = b.type === "upload" && (
-        b.text.toLowerCase().includes('cv') || 
-        b.text.toLowerCase().includes('resume') ||
-        b.text.toLowerCase().includes('document')
+        b.text.toLowerCase().includes('most recent cv') ||
+        b.text.toLowerCase().includes('please upload your most recent') ||
+        (b.text.toLowerCase().includes('cv') && b.text.toLowerCase().includes('pdf') && !b.text.toLowerCase().includes('optional')) ||
+        (b.text.toLowerCase().includes('resume') && b.text.toLowerCase().includes('pdf') && !b.text.toLowerCase().includes('optional'))
       );
       
       // User type questions go first
@@ -273,18 +275,6 @@ export function transformQuestionsToSteps(questions: Question[]): OnboardingStep
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
 
-  // Debug logging for question ordering
-  console.log("Question ordering:", {
-    totalQuestions: questions.length,
-    activeQuestions: questions.filter(q => q.status === "active").length,
-    sortedQuestions: sortedQuestions.map(q => ({
-      text: q.text,
-      type: q.type,
-      stepNumber: q.step.stepNumber,
-      isUserType: q.text.toLowerCase().includes('student') && q.text.toLowerCase().includes('professional'),
-      isCV: q.type === "upload" && (q.text.toLowerCase().includes('cv') || q.text.toLowerCase().includes('resume'))
-    }))
-  });
 
   const steps: OnboardingStep[] = sortedQuestions.map((question, index) => {
     const stepType = mapQuestionType(question.type);
@@ -311,14 +301,6 @@ export function transformQuestionsToSteps(questions: Question[]): OnboardingStep
       category: question.category,
     };
     
-    // Debug logging for yes/no questions
-    if (question.type === "yes/no") {
-      console.log(`Yes/No question "${question.text}":`, {
-        originalOptions: question.options,
-        generatedOptions: step.options,
-        stepType: stepType
-      });
-    }
     
     return step;
   });
