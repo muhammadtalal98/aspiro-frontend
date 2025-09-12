@@ -279,6 +279,19 @@ export function transformQuestionsToSteps(questions: Question[]): OnboardingStep
 
   const steps: OnboardingStep[] = sortedQuestions.map((question, index) => {
     const stepType = mapQuestionType(question.type);
+    // Defensive: normalize options
+    let normalizedOptions: string[] | undefined = undefined;
+    if (question.type === 'yes/no') {
+      normalizedOptions = ["Yes", "No"];
+    } else if (question.type === 'multiple-choice') {
+      if (Array.isArray(question.options) && question.options.length > 0) {
+        normalizedOptions = question.options.filter(o => !!o && o.trim().length > 0);
+      }
+      if (!normalizedOptions || normalizedOptions.length === 0) {
+        // Fallback: degrade to text input later by leaving options undefined
+        normalizedOptions = undefined;
+      }
+    }
     
     const step = {
       id: question._id,
@@ -286,13 +299,7 @@ export function transformQuestionsToSteps(questions: Question[]): OnboardingStep
       subtitle: generateSubtitle(question),
       icon: getStepIcon(question.step.stepName),
       type: stepType,
-      options: question.type === "multiple-choice" ? 
-               (question.options && question.options.length > 0 && 
-                question.options[0].includes(' ') && 
-                question.text.toLowerCase().includes('student') && 
-                question.text.toLowerCase().includes('professional') ? 
-                ["Student", "Professional"] : question.options) : 
-               question.type === "yes/no" ? ["Yes", "No"] : undefined,
+  options: normalizedOptions,
       placeholder: generatePlaceholder(question),
       required: !question.optional,
       fileTypes: question.type === "upload" ? generateFileTypes(question) : undefined,

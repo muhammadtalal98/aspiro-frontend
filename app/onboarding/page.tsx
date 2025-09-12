@@ -577,7 +577,11 @@ export default function OnboardingPage() {
       return hasFiles
     }
     
-    // For other question types, use existing validation
+    // For other question types (including select with no options fallback -> text)
+    if ((currentStepData.type === 'select' || currentStepData.type === 'multiselect') && (!currentStepData.options || currentStepData.options.length === 0)) {
+      return currentValue && currentValue.toString().trim().length > 0
+    }
+
     return currentValue && (
       Array.isArray(currentValue) ? currentValue.length > 0 : 
       typeof currentValue === 'boolean' ? currentValue :
@@ -712,8 +716,18 @@ export default function OnboardingPage() {
                       {/* Answer options */}
                       {(currentStepData.type === "select" || currentStepData.type === "multiselect") && (
                         <div className="space-y-2 sm:space-y-3">
-
-                          {currentStepData.options?.map((option) => {
+                          {/* Fallback: if no options, render text input */}
+                          {(!currentStepData.options || currentStepData.options.length === 0) && (
+                            <Input
+                              type="text"
+                              placeholder={currentStepData.placeholder || "Enter your answer..."}
+                              value={(currentValue as string) || ""}
+                              onChange={(e) => handleInputChange(e.target.value)}
+                              onKeyPress={handleKeyPress}
+                              className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg h-12 sm:h-14 text-left"
+                            />
+                          )}
+                          {currentStepData.options && currentStepData.options.map((option) => {
                             let isSelected = false
                             
                             if (currentStepData.type === "multiselect") {
