@@ -494,6 +494,12 @@ export default function OnboardingPage() {
           )
           
           console.log('Pre-filled form data generated:', preFilledFormData);
+          console.log('Auto-fill vs AI suggestions breakdown:', {
+            autoFillAnswers: Object.entries(result.data.preFilledAnswers).filter(([id, answer]) => answer.type === 'auto-fill'),
+            aiSuggestionsAnswers: Object.entries(result.data.preFilledAnswers).filter(([id, answer]) => answer.type === 'ai-suggestions'),
+            totalAnswers: Object.keys(result.data.preFilledAnswers).length
+          });
+          
           setFormData(prev => {
             const updated = { ...prev, ...preFilledFormData };
             console.log('Updated form data:', updated);
@@ -730,7 +736,12 @@ export default function OnboardingPage() {
                           <div>Total pre-fill answers: {Object.keys(preFillData?.data?.preFilledAnswers || {}).length}</div>
                           <div>Available pre-fill IDs: {Object.keys(preFillData?.data?.preFilledAnswers || {}).join(', ')}</div>
                           {preFillData?.data?.preFilledAnswers?.[currentStepData.id] && (
-                            <div>Pre-fill answer: {JSON.stringify(preFillData.data.preFilledAnswers[currentStepData.id].answer)}</div>
+                            <div>
+                              <div>Pre-fill answer: {JSON.stringify(preFillData.data.preFilledAnswers[currentStepData.id].answer)}</div>
+                              <div>Pre-fill type: {preFillData.data.preFilledAnswers[currentStepData.id].type}</div>
+                              <div>Pre-fill suggestions: {JSON.stringify(preFillData.data.preFilledAnswers[currentStepData.id].suggestions)}</div>
+                              <div>Pre-fill confidence: {preFillData.data.preFilledAnswers[currentStepData.id].confidence}</div>
+                            </div>
                           )}
                         </div>
                       )}

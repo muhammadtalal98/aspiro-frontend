@@ -76,49 +76,67 @@ export default function PreFillDisplay({
     </div>
   );
 
-  const renderAISuggestions = () => (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm text-cyan-300">
-        <Brain className="h-4 w-4 text-purple-400" />
-        <span>AI-generated suggestions</span>
-        <span className={`text-xs px-2 py-1 rounded-full bg-purple-400/20 ${getConfidenceColor(preFillAnswer.confidence)}`}>
-          {getConfidenceDescription(preFillAnswer.confidence)} confidence
-        </span>
-      </div>
+  const renderAISuggestions = () => {
+    // Auto-fill with the first suggestion if available
+    const firstSuggestion = preFillAnswer.suggestions?.[0];
+    
+    if (firstSuggestion && !currentValue) {
+      // Auto-accept the first suggestion
+      handleAcceptSuggestion(firstSuggestion);
+    }
 
-      {!showSuggestions ? (
-        <button
-          onClick={() => setShowSuggestions(true)}
-          className="w-full p-3 bg-purple-400/10 border border-purple-400/30 rounded-lg hover:bg-purple-400/20 transition-colors duration-200 flex items-center justify-center gap-2"
-        >
-          <Sparkles className="h-4 w-4 text-purple-400" />
-          <span className="text-purple-100">Show AI Suggestions ({preFillAnswer.suggestions?.length || 0})</span>
-        </button>
-      ) : (
-        <div className="space-y-2">
-          {preFillAnswer.suggestions?.map((suggestion, index) => (
-            <button
-              key={index}
-              onClick={() => handleAcceptSuggestion(suggestion)}
-              className="w-full p-3 text-left bg-purple-400/10 border border-purple-400/30 rounded-lg hover:bg-purple-400/20 transition-colors duration-200"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-purple-100">{suggestion}</span>
-                <CheckCircle className="h-4 w-4 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-              </div>
-            </button>
-          ))}
-          
-          <button
-            onClick={() => setShowSuggestions(false)}
-            className="w-full p-2 text-sm text-purple-300 hover:text-purple-100 transition-colors duration-200"
-          >
-            Hide suggestions
-          </button>
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm text-cyan-300">
+          <Brain className="h-4 w-4 text-purple-400" />
+          <span>AI-generated suggestions</span>
+          <span className={`text-xs px-2 py-1 rounded-full bg-purple-400/20 ${getConfidenceColor(preFillAnswer.confidence)}`}>
+            {getConfidenceDescription(preFillAnswer.confidence)} confidence
+          </span>
         </div>
-      )}
-    </div>
-  );
+
+        {firstSuggestion && (
+          <div className="p-3 bg-purple-400/10 border border-purple-400/30 rounded-lg">
+            <p className="text-purple-100 font-medium">Auto-filled: {firstSuggestion}</p>
+          </div>
+        )}
+
+        {preFillAnswer.suggestions && preFillAnswer.suggestions.length > 1 && (
+          <>
+            {!showSuggestions ? (
+              <button
+                onClick={() => setShowSuggestions(true)}
+                className="px-3 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-sm rounded-md transition-colors duration-200 flex items-center gap-2"
+              >
+                <Sparkles className="h-4 w-4" />
+                Show All Options ({preFillAnswer.suggestions.length})
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-purple-300">Other options:</p>
+                {preFillAnswer.suggestions.slice(1).map((suggestion, index) => (
+                  <button
+                    key={index + 1}
+                    onClick={() => handleAcceptSuggestion(suggestion)}
+                    className="w-full p-2 text-left bg-purple-400/10 border border-purple-400/30 rounded-lg hover:bg-purple-400/20 transition-colors duration-200 text-sm"
+                  >
+                    <span className="text-purple-100">{suggestion}</span>
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => setShowSuggestions(false)}
+                  className="w-full p-2 text-xs text-purple-300 hover:text-purple-100 transition-colors duration-200"
+                >
+                  Hide options
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
 
   const renderError = () => (
     <div className="space-y-3">

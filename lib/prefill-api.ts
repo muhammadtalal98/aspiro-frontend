@@ -113,7 +113,7 @@ export interface ProcessingSummary {
     aiSuggestions: Array<{
       questionId: string;
       questionText: string;
-      suggestionCount: number;
+      hasAnswer: boolean;
     }>;
     noMatch: Array<{
       questionId: string;
@@ -221,10 +221,14 @@ export function applyPreFilledAnswers(
         break;
         
       case 'ai-suggestions':
-        // For AI suggestions, we'll handle this in the UI
-        // Store suggestions for display
-        formData[`${formDataKey}_suggestions`] = preFillAnswer.suggestions || [];
-        console.log(`AI suggestions for question: ${question.title}`, preFillAnswer.suggestions);
+        // For AI suggestions, use the direct answer
+        if (preFillAnswer.answer) {
+          formData[formDataKey] = preFillAnswer.answer;
+          console.log(`Auto-filled question: ${question.title} with AI answer: ${preFillAnswer.answer}`);
+        }
+        // Store the answer for potential display
+        formData[`${formDataKey}_aiAnswer`] = preFillAnswer.answer || '';
+        console.log(`AI answer for question: ${question.title}`, preFillAnswer.answer);
         break;
     }
   });
