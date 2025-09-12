@@ -61,42 +61,38 @@ export default function OnboardingPage() {
 
 
   // Load existing CV suggestions
-<!--   useEffect(() => {
-//     const loadCVSuggestions = async () => {
-//       const token = getToken();
-//       if (!token) return;
-
-//       try {
-//         const suggestions = await getCVSuggestions(token);
-//         setCvSuggestions(suggestions.data);
-//         if (Object.keys(suggestions.data.autoFilled).length > 0 || Object.keys(suggestions.data.aiSuggestions).length > 0) {
-//           setCvUploaded(true);
-//         }
-//       } catch (err) {
-//         console.error("Failed to load CV suggestions:", err);
-//         // Don't show error for this, it's optional
+// useEffect(() => {
+//   const loadCVSuggestions = async () => {
+//     const token = getToken();
+//     if (!token) return;
+//     try {
+//       const suggestions = await getCVSuggestions(token);
+//       setCvSuggestions(suggestions.data);
+//       if (Object.keys(suggestions.data.autoFilled).length > 0 || Object.keys(suggestions.data.aiSuggestions).length > 0) {
+//         setCvUploaded(true);
 //       }
-//     };
-
-//     if (user) {
-//       loadCVSuggestions();
+//     } catch (err) {
+//       console.error("Failed to load CV suggestions:", err);
+//       // Don't show error for this, it's optional
 //     }
-//   }, [user, getToken]);
+//   };
+//   if (user) {
+//     loadCVSuggestions();
+//   }
+// }, [user, getToken]);
 
-//   // Apply auto-filled data when questions are loaded
-//   useEffect(() => {
-//     if (onboardingSteps.length > 0 && Object.keys(cvSuggestions.autoFilled).length > 0) {
-//       const newFormData = { ...formData };
-//       Object.entries(cvSuggestions.autoFilled).forEach(([questionId, answer]) => {
-//         // Find the step that corresponds to this question ID
-//         const step = onboardingSteps.find(s => s.id === questionId);
-//         if (step && !newFormData[questionId]) {
-//           newFormData[questionId] = answer;
-//         }
-//       });
-//       setFormData(newFormData);
-//     }
-//   }, [onboardingSteps, cvSuggestions.autoFilled]);
+// useEffect(() => {
+//   if (onboardingSteps.length > 0 && Object.keys(cvSuggestions.autoFilled).length > 0) {
+//     const newFormData = { ...formData };
+//     Object.entries(cvSuggestions.autoFilled).forEach(([questionId, answer]) => {
+//       const step = onboardingSteps.find(s => s.id === questionId);
+//       if (step && !newFormData[questionId]) {
+//         newFormData[questionId] = answer;
+//       }
+//     });
+//     setFormData(newFormData);
+//   }
+// }, [onboardingSteps, cvSuggestions.autoFilled]);
 
 
   // Fetch questions from backend
@@ -506,7 +502,9 @@ export default function OnboardingPage() {
       setCvProcessingError(null)
 
       
-      const result = await preFillQuestions(cvFiles, getToken())
+  const authToken = getToken();
+  if (!authToken) throw new Error('Missing auth token for CV prefill');
+  const result = await preFillQuestions(cvFiles, authToken)
       
       if (result.success) {
         setPreFillData(result)
@@ -922,7 +920,7 @@ export default function OnboardingPage() {
                                     // Create a hidden file input to trigger file selection
                                     const input = document.createElement('input');
                                     input.type = 'file';
-                                    input.accept = currentStepData.fileTypes?.join(",");
+                                    input.accept = currentStepData.fileTypes?.join(",") || '';
                                     input.multiple = Boolean(currentStepData.maxFiles && currentStepData.maxFiles > 1);
                                     input.onchange = (e) => {
                                       const target = e.target as HTMLInputElement;
