@@ -1,23 +1,42 @@
 "use client"
 import { useEffect, useMemo, useState } from "react"
-import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, Plus, Eye, Edit, Trash2, ArrowUpDown } from "lucide-react"
-
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card"
 import { NeuroButton } from "@/components/ui/neuro-button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { DataTable } from "@/components/ui/data-table"
-
+import {
+  Users,
+  BookOpen,
+  Settings,
+  BarChart3,
+  Search,
+  Filter,
+  FileText,
+  User,
+  ChevronDown,
+  Users2,
+  Eye,
+  Edit,
+  Trash2,
+  Plus,
+} from "lucide-react"
+import Link from "next/link"
 import AdminOnly from "../AdminOnly"
 import { AdminSidebar } from "@/components/admin-sidebar"
 import { useAuth } from "@/lib/auth-context"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { useToast } from "@/hooks/use-toast"
 import { getApiUrl } from "@/lib/api-config"
+
+const adminSidebarItems = [
+  { icon: BarChart3, label: "Dashboard", href: "/admin", number: "1" },
+  { icon: BookOpen, label: "Courses", href: "/admin/courses" },
+  { icon: Users2, label: "Majors", href: "/admin/majors" },
+  { icon: Users2, label: "Users", href: "/admin/users", active: true },
+  // { icon: FileText, label: "Questionnaires", href: "/admin/questionnaires" },
+]
 
 type Role = "admin" | "user"
 type AdminUser = {
@@ -39,14 +58,6 @@ export default function UsersManagement() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isFetching, setIsFetching] = useState(false)
-
-  // Pagination state
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 20,
-    pageCount: 1,
-    total: 0,
-  })
 
   // Dialog state
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -77,13 +88,7 @@ export default function UsersManagement() {
   const loadUsers = async () => {
     try {
       setIsFetching(true)
-      const params = new URLSearchParams()
-      params.append('page', String(pagination.pageIndex + 1))
-      params.append('limit', String(pagination.pageSize))
-      if (searchTerm.trim()) params.append('q', searchTerm.trim())
-      if (selectedRole !== 'all') params.append('role', selectedRole)
-
-      const res = await fetch(getApiUrl(`/admin/users?${params.toString()}`), {
+      const res = await fetch(getApiUrl('/admin/users'), {
         headers: {
           "Content-Type": "application/json",
           ...(getAuthHeaders() as Record<string, string>),
@@ -94,11 +99,6 @@ export default function UsersManagement() {
       const data = await res.json()
       if (data?.success && Array.isArray(data.users)) {
         setUsers(data.users)
-        setPagination(prev => ({
-          ...prev,
-          total: data.total || data.users.length,
-          pageCount: data.pages || Math.ceil((data.total || data.users.length) / prev.pageSize)
-        }))
       } else {
         throw new Error("Invalid response")
       }
@@ -113,121 +113,16 @@ export default function UsersManagement() {
   useEffect(() => {
     loadUsers()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.pageIndex, pagination.pageSize])
+  }, [])
 
-  const handleSearch = () => {
-    setPagination(prev => ({ ...prev, pageIndex: 0 }))
-    setTimeout(() => loadUsers(), 0)
-  }
-
-  const filteredUsers = useMemo(() => users, [users])
-
-  // Define columns for the data table
-  const columns: ColumnDef<AdminUser>[] = [
-    {
-      accessorKey: "fullName",
-      header: ({ column }) => {
-        return (
-          <NeuroButton
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 hover:bg-transparent text-white font-medium"
-          >
-            User
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </NeuroButton>
-        )
-      },
-      cell: ({ row }) => {
-        const user = row.original
-        return (
-          <div>
-            <p className="font-medium text-white text-sm">{user.fullName}</p>
-            <p className="text-xs text-cyan-300">{user.email}</p>
-            <div className="md:hidden mt-1">
-              <p className="text-xs text-cyan-300/70">Created: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</p>
-            </div>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "role",
-      header: "Role",
-      cell: ({ row }) => {
-        const role = row.getValue("role") as string
-        return (
-          <Badge className={`${getRoleColor(role)} text-xs font-medium`}>
-            {role}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: "createdAt",
-      header: "Created",
-      cell: ({ row }) => {
-        const date = row.getValue("createdAt") as string
-        return (
-          <span className="text-sm text-cyan-300 hidden md:table-cell">
-            {date ? new Date(date).toLocaleDateString() : "—"}
-          </span>
-        )
-      },
-    },
-    {
-      accessorKey: "updatedAt",
-      header: "Updated",
-      cell: ({ row }) => {
-        const date = row.getValue("updatedAt") as string
-        return (
-          <span className="text-sm text-cyan-300 hidden lg:table-cell">
-            {date ? new Date(date).toLocaleDateString() : "—"}
-          </span>
-        )
-      },
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const user = row.original
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <NeuroButton variant="ghost" className="h-8 w-8 p-0 text-cyan-100 hover:bg-cyan-400/10">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </NeuroButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-[#0e2439]/90 backdrop-blur-xl border border-cyan-400/30">
-              <DropdownMenuItem 
-                onClick={() => { setSelectedUser(user); setIsViewOpen(true) }}
-                className="text-white hover:bg-cyan-400/10 cursor-pointer"
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                View
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => openEdit(user)}
-                className="text-white hover:bg-cyan-400/10 cursor-pointer"
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => setPendingDeleteId(user._id)}
-                className="text-red-300 hover:bg-red-500/10 cursor-pointer"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
-    },
-  ]
+  const filteredUsers = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    return users.filter((u) => {
+      const matchesSearch = !term || u.fullName.toLowerCase().includes(term) || u.email.toLowerCase().includes(term)
+      const matchesRole = selectedRole === "all" || u.role === (selectedRole as Role)
+      return matchesSearch && matchesRole
+    })
+  }, [users, searchTerm, selectedRole])
 
   // CRUD handlers
   const handleAdd = async () => {
@@ -244,10 +139,10 @@ export default function UsersManagement() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.message || `Create failed (${res.status})`)
+      setUsers((prev) => [data.user as AdminUser, ...prev])
       setIsAddOpen(false)
       setAddForm({ fullName: "", email: "", password: "", role: "user" })
       toast({ title: "User created" })
-      loadUsers()
     } catch (e: any) {
       toast({ title: "Create failed", description: e.message || "Please check inputs." })
     } finally {
@@ -278,9 +173,9 @@ export default function UsersManagement() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.message || `Update failed (${res.status})`)
+      setUsers((prev) => prev.map((u) => (u._id === selectedUser._id ? (data.user as AdminUser) : u)))
       setIsEditOpen(false)
       toast({ title: "User updated" })
-      loadUsers()
     } catch (e: any) {
       toast({ title: "Update failed", description: e.message || "Please try again." })
     } finally {
@@ -300,33 +195,14 @@ export default function UsersManagement() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.message || `Delete failed (${res.status})`)
+      setUsers((prev) => prev.filter((u) => u._id !== pendingDeleteId))
       toast({ title: "User deleted" })
-      loadUsers()
     } catch (e: any) {
       toast({ title: "Delete failed", description: e.message || "Please try again." })
     } finally {
       setPendingDeleteId(null)
     }
   }
-
-  const filterComponent = (
-    <select
-      value={selectedRole}
-      onChange={(e) => { setSelectedRole(e.target.value); setPagination(prev => ({ ...prev, pageIndex: 0 })); setTimeout(() => loadUsers(), 0) }}
-      className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white min-w-[120px]"
-    >
-      <option value="all">All Roles</option>
-      <option value="user">User</option>
-      <option value="admin">Admin</option>
-    </select>
-  )
-
-  const toolbar = (
-    <NeuroButton onClick={() => setIsAddOpen(true)} className="flex items-center gap-2 bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30 text-sm">
-      <Plus className="h-4 w-4" />
-      Add User
-    </NeuroButton>
-  )
 
   return (
     <AdminOnly>
@@ -341,34 +217,114 @@ export default function UsersManagement() {
               <h1 className="text-xl sm:text-2xl font-bold text-white">Users</h1>
               <p className="text-cyan-300 text-sm mt-1">Manage user accounts and permissions.</p>
             </div>
+            <div className="flex items-center gap-2">
+              <NeuroButton onClick={() => setIsAddOpen(true)} className="flex items-center gap-2 bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30 text-sm">
+                <Plus className="h-4 w-4" />
+                Add User
+              </NeuroButton>
+            </div>
           </div>
 
-          {/* Users DataTable */}
+          {/* Filters and Search */}
+          <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20 mb-4 lg:mb-6">
+            <GlassCardContent className="p-4 sm:p-6">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-cyan-300" />
+                    <Input
+                      placeholder="Search users by name or email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 focus:border-cyan-400/60 text-white placeholder-cyan-300/50 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white min-w-[120px]"
+                  >
+                    <option value="all">All Roles</option>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <NeuroButton variant="outline" size="sm" onClick={loadUsers} className="border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/10">
+                    <Filter className="h-4 w-4" />
+                  </NeuroButton>
+                </div>
+              </div>
+            </GlassCardContent>
+          </GlassCard>
+
+          {/* Users Table */}
           <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20">
             <GlassCardHeader className="p-4 sm:p-6 pb-0">
               <div className="flex items-center gap-3">
-                <GlassCardTitle className="text-white text-lg sm:text-xl">Users ({pagination.total})</GlassCardTitle>
+                <GlassCardTitle className="text-white text-lg sm:text-xl">Users ({filteredUsers.length})</GlassCardTitle>
                 {isFetching && <LoadingSpinner size="sm" />}
               </div>
             </GlassCardHeader>
             <GlassCardContent className="p-4 sm:p-6">
-              <DataTable
-                columns={columns}
-                data={filteredUsers}
-                searchPlaceholder="Search users by name or email..."
-                isLoading={isLoading}
-                onRefresh={loadUsers}
-                filterComponent={filterComponent}
-                toolbar={toolbar}
-                pagination={{
-                  pageIndex: pagination.pageIndex,
-                  pageSize: pagination.pageSize,
-                  pageCount: pagination.pageCount,
-                  total: pagination.total,
-                  onPageChange: (pageIndex) => setPagination(prev => ({ ...prev, pageIndex })),
-                  onPageSizeChange: (pageSize) => setPagination(prev => ({ ...prev, pageSize, pageIndex: 0 })),
-                }}
-              />
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <table className="w-full min-w-[600px] sm:min-w-0">
+                  <thead>
+                    <tr className="border-b border-cyan-400/20">
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">User</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Role</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm hidden md:table-cell">Created</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm hidden lg:table-cell">Updated</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-cyan-300">
+                          <LoadingSpinner text="Loading users..." />
+                        </td>
+                      </tr>
+                    ) : filteredUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-cyan-300">No users found</td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <tr key={user._id} className="border-b border-cyan-400/10 hover:bg-cyan-400/5 transition-all duration-300">
+                          <td className="py-4 px-2 sm:px-4">
+                            <div>
+                              <p className="font-medium text-white text-sm">{user.fullName}</p>
+                              <p className="text-xs text-cyan-300">{user.email}</p>
+                              <div className="md:hidden mt-1">
+                                <p className="text-xs text-cyan-300/70">Created: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-2 sm:px-4">
+                            <Badge className={`${getRoleColor(user.role)} text-xs font-medium`}>{user.role}</Badge>
+                          </td>
+                          <td className="py-4 px-2 sm:px-4 text-sm text-cyan-300 hidden md:table-cell">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</td>
+                          <td className="py-4 px-2 sm:px-4 text-sm text-cyan-300 hidden lg:table-cell">{user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : "—"}</td>
+                          <td className="py-4 px-2 sm:px-4">
+                            <div className="flex items-center gap-1 sm:gap-2">
+                              <NeuroButton variant="ghost" size="sm" title="View" onClick={() => { setSelectedUser(user); setIsViewOpen(true) }} className="text-cyan-100 hover:bg-cyan-400/10 p-1 sm:p-2">
+                                <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                              </NeuroButton>
+                              <NeuroButton variant="ghost" size="sm" title="Edit" onClick={() => openEdit(user)} className="text-cyan-100 hover:bg-cyan-400/10 p-1 sm:p-2">
+                                <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                              </NeuroButton>
+                              <NeuroButton variant="ghost" size="sm" title="Delete" onClick={() => setPendingDeleteId(user._id)} className="text-red-300 hover:bg-red-500/10 p-1 sm:p-2">
+                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                              </NeuroButton>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </GlassCardContent>
           </GlassCard>
 

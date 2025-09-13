@@ -1,10 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { GlassCard, GlassCardContent } from "@/components/ui/glass-card"
 import { NeuroButton } from "@/components/ui/neuro-button"
-import { GraduationCap, RefreshCw, CheckCircle2, Circle, UploadCloud, X, Target, Clock, Award } from "lucide-react"
-import Link from "next/link"
+import { GraduationCap, RefreshCw, CheckCircle2, X } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import ProtectedRoute from "@/components/ProtectedRoute"
 import { getCurrentRoadmap, CurrentRoadmapSuggestion, generateRoadmap, regenerateCourse, completeCourse, getProgressStats, ProgressStatsData } from "@/lib/roadmap-api"
@@ -12,9 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { UserSidebar } from "@/components/user-sidebar"
-import { AIChat, AIChatButton } from "@/components/ai-chat"
 
-export default function DashboardPage() {
+export default function UserRoadmapPage() {
   const { user, logout, resetUserProgress } = useAuth()
   const [loadingRoadmap, setLoadingRoadmap] = useState(true)
   const [roadmapError, setRoadmapError] = useState<string | null>(null)
@@ -31,12 +28,6 @@ export default function DashboardPage() {
   const [completionNote, setCompletionNote] = useState('')
   const [completing, setCompleting] = useState(false)
   const [completionError, setCompletionError] = useState<string | null>(null)
-  const [isChatOpen, setIsChatOpen] = useState(false)
-  
-  // New state for progress stats
-  const [progressStats, setProgressStats] = useState<ProgressStatsData | null>(null)
-  const [loadingStats, setLoadingStats] = useState(true)
-  const [statsError, setStatsError] = useState<string | null>(null)
 
   const refreshRoadmap = async () => {
     try {
@@ -77,28 +68,12 @@ export default function DashboardPage() {
     }
   }
 
-  const refreshProgressStats = async () => {
-    try {
-      setLoadingStats(true)
-      setStatsError(null)
-      const res = await getProgressStats()
-      if (res.success && res.data) {
-        setProgressStats(res.data)
-      }
-    } catch (e: any) {
-      setStatsError(e.message || 'Failed to load progress stats')
-    } finally {
-      setLoadingStats(false)
-    }
-  }
-
   const handleGenerate = async () => {
     setGenerateError(null)
     setGenerating(true)
     try {
       await generateRoadmap()
       await refreshRoadmap()
-      await refreshProgressStats()
     } catch (e: any) {
       setGenerateError(e.message || 'Failed to generate roadmap')
     } finally {
@@ -111,9 +86,9 @@ export default function DashboardPage() {
     setRegenError(null)
     setRegenLoadingOrder(order)
     try {
-      console.log('[Dashboard] Regenerating course order', order, 'for roadmap', selectedSuggestion.roadmapId)
+      console.log('[UserRoadmap] Regenerating course order', order, 'for roadmap', selectedSuggestion.roadmapId)
       const res = await regenerateCourse({ roadmapId: selectedSuggestion.roadmapId, order, reason: 'User requested different course' })
-      console.log('[Dashboard] Regenerate response:', res)
+      console.log('[UserRoadmap] Regenerate response:', res)
       if (res.success && res.data?.replaced) {
         // Update local selectedSuggestion courses
         setSelectedSuggestion(prev => {
@@ -157,9 +132,9 @@ export default function DashboardPage() {
     setCompleting(true)
     setCompletionError(null)
     try {
-      console.log('[Dashboard] Completing course', completionTarget)
+      console.log('[UserRoadmap] Completing course', completionTarget)
       const res = await completeCourse(selectedSuggestion.roadmapId, completionTarget.courseId, completionFile || undefined, completionNote || undefined)
-      console.log('[Dashboard] Complete response:', res)
+      console.log('[UserRoadmap] Complete response:', res)
       if (!res.success) throw new Error(res.message || 'Failed to complete course')
       // Optimistic update
       setSelectedSuggestion(prev => {
@@ -171,7 +146,6 @@ export default function DashboardPage() {
       // Refresh to sync progress
       setTimeout(() => { 
         refreshRoadmap()
-        refreshProgressStats()
       }, 800)
     } catch (e:any) {
       console.error('Complete course failed', e)
@@ -184,7 +158,7 @@ export default function DashboardPage() {
   useEffect(() => {
     let mounted = true
     const init = async () => { 
-      await Promise.all([refreshRoadmap(), refreshProgressStats()])
+      await refreshRoadmap()
     }
     init()
     return () => { mounted = false }
@@ -202,69 +176,24 @@ export default function DashboardPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6 lg:mb-8 pt-4 lg:pt-0 border-b border-cyan-400/40 pb-4">
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-white">Dashboard</h1>
-                <p className="text-cyan-300 text-sm mt-1">Track your learning progress</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-white">My Roadmaps</h1>
+                <p className="text-cyan-300 text-sm mt-1">Manage and track your learning paths</p>
               </div>
             </div>
-
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-6 lg:mb-8">
-              <div className="p-3 sm:p-4 lg:p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1 sm:mb-2">
-                      {loadingStats ? '—' : (progressStats?.main?.completionPercent || 0)}%
-                    </div>
-                    <div className="text-cyan-300 text-xs sm:text-sm">Completion</div>
-                  </div>
-                  <Target className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-cyan-400" />
-                </div>
-              </div>
-              
-              <div className="p-3 sm:p-4 lg:p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1 sm:mb-2">
-                      {loadingStats ? '—' : `${progressStats?.main?.completedCourses || 0}/${progressStats?.details?.totalCourses || 0}`}
-                    </div>
-                    <div className="text-cyan-300 text-xs sm:text-sm">Courses</div>
-                  </div>
-                  <GraduationCap className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-cyan-400" />
-                </div>
-              </div>
-              
-              <div className="p-3 sm:p-4 lg:p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 sm:col-span-2 lg:col-span-1">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1 sm:mb-2">
-                      {loadingStats ? '—' : (progressStats?.main?.streakDays || 0)}
-                    </div>
-                    <div className="text-cyan-300 text-xs sm:text-sm">Day Streak</div>
-                  </div>
-                  <Award className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-cyan-400" />
-                </div>
-              </div>
-            </div>
-
-            {statsError && (
-              <div className="mb-6 p-4 rounded-lg bg-red-500/20 border border-red-400/30 text-red-300 text-sm">
-                Failed to load stats: {statsError}
-              </div>
-            )}
 
             {/* Roadmap Section */}
-            <div className="backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 rounded-xl p-3 sm:p-4 lg:p-6 xl:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
+            <div className="backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 rounded-xl p-4 sm:p-6 lg:p-8">
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-400" />
-                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Your Roadmap</h2>
+                  <GraduationCap className="h-6 w-6 text-cyan-400" />
+                  <h2 className="text-xl lg:text-2xl font-bold text-white">Your Current Roadmap</h2>
                 </div>
                 {selectedSuggestion && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-3">
                     <NeuroButton 
                       onClick={handleGenerate}
                       disabled={generating}
-                      className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-cyan-400/30 text-xs sm:text-sm disabled:opacity-60"
+                      className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold px-4 py-2 rounded-lg border border-cyan-400/30 text-sm disabled:opacity-60"
                     >
                       {generating ? 'Regenerating...' : 'Regenerate Roadmap'}
                     </NeuroButton>
@@ -297,7 +226,7 @@ export default function DashboardPage() {
                 <div>
                   <div className="relative">
                     {/* Course cards grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 relative">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 relative">
                       {/* Connecting line background - full width with enhanced glow */}
                       <div className="hidden xl:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent transform -translate-y-1/2 z-0">
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent blur-sm"></div>
@@ -305,7 +234,7 @@ export default function DashboardPage() {
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent blur-lg"></div>
                       </div>
                       
-                      {/* Vertical connecting line for mobile/tablet with enhanced glow */}
+                      {/* Vertical connecting line for mobile with enhanced glow */}
                       <div className="xl:hidden absolute top-0 bottom-0 left-1/2 w-1 bg-gradient-to-b from-transparent via-cyan-400/40 to-transparent transform -translate-x-1/2 z-0">
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-400/70 to-transparent blur-sm"></div>
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-300/50 to-transparent blur-md"></div>
@@ -319,9 +248,9 @@ export default function DashboardPage() {
                         
                         return (
                           <div key={idx} className="relative z-10">
-                            <div className="relative group p-4 sm:p-5 lg:p-6 h-[240px] sm:h-[260px] lg:h-[280px] flex flex-col rounded-2xl backdrop-blur-xl bg-[#0e2439]/70 border border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 transition-all duration-300">
+                            <div className="relative group p-6 h-[280px] flex flex-col rounded-2xl backdrop-blur-xl bg-[#0e2439]/70 border border-cyan-400/40 shadow-lg shadow-cyan-500/10 hover:shadow-cyan-500/20 transition-all duration-300">
                               {/* Top section with course number */}
-                              <div className="flex items-start justify-between mb-3 sm:mb-4">
+                              <div className="flex items-start justify-between mb-4">
                                 <span className="text-xs px-2 py-1 rounded-md bg-cyan-400/20 text-cyan-200 border border-cyan-400/30">#{item.order}</span>
                                 {/* Regenerate button */}
                                 {selectedSuggestion && (
@@ -329,35 +258,35 @@ export default function DashboardPage() {
                                     onClick={() => handleRegenerateCourse(item.order)}
                                     disabled={regenLoadingOrder === item.order}
                                     title="Regenerate this course"
-                                    className="p-1.5 sm:p-2 rounded-lg bg-cyan-400/10 border border-cyan-400/30 text-cyan-300 hover:text-white hover:bg-cyan-400/20 transition disabled:opacity-50"
+                                    className="p-2 rounded-lg bg-cyan-400/10 border border-cyan-400/30 text-cyan-300 hover:text-white hover:bg-cyan-400/20 transition disabled:opacity-50"
                                   >
-                                    <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${regenLoadingOrder === item.order ? 'animate-spin' : ''}`} />
+                                    <RefreshCw className={`h-4 w-4 ${regenLoadingOrder === item.order ? 'animate-spin' : ''}`} />
                                   </button>
                                 )}
                               </div>
                               
                               {/* Status indicator - positioned separately */}
                               <div className="absolute top-2 right-2">
-                                <span className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border ${item.completed ? 'bg-green-400 border-green-300 shadow-[0_0_6px_2px_rgba(34,197,94,0.5)]' : 'bg-amber-400 border-amber-300 shadow-[0_0_6px_2px_rgba(245,158,11,0.5)]'}`} title={item.completed ? 'Completed' : 'Pending'}></span>
+                                <span className={`w-3 h-3 rounded-full border ${item.completed ? 'bg-green-400 border-green-300 shadow-[0_0_6px_2px_rgba(34,197,94,0.5)]' : 'bg-amber-400 border-amber-300 shadow-[0_0_6px_2px_rgba(245,158,11,0.5)]'}`} title={item.completed ? 'Completed' : 'Pending'}></span>
                               </div>
                               
                               {/* Course title */}
-                              <div className="mb-2 sm:mb-3">
-                                <h3 className="text-base sm:text-lg font-semibold text-white leading-snug line-clamp-2">{isObj ? (c.title || 'Course') : 'Course ' + item.order}</h3>
+                              <div className="mb-3">
+                                <h3 className="text-lg font-semibold text-white leading-snug line-clamp-2">{isObj ? (c.title || 'Course') : 'Course ' + item.order}</h3>
                               </div>
                               
-                              {isObj && <p className="text-cyan-200/80 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-3 flex-grow">{c.description}</p>}
+                              {isObj && <p className="text-cyan-200/80 text-xs mb-4 line-clamp-3 flex-grow">{c.description}</p>}
                               
-                              <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-cyan-300/70 mb-3 sm:mb-4">
-                                <span className="truncate">{isObj ? c.category : ''}</span>
-                                <span className="italic truncate ml-1">{isObj ? c.instructor : ''}</span>
+                              <div className="flex items-center justify-between text-[11px] text-cyan-300/70 mb-4">
+                                <span>{isObj ? c.category : ''}</span>
+                                <span className="italic">{isObj ? c.instructor : ''}</span>
                               </div>
                               
                               <div className="mt-auto flex justify-center">
                                 {selectedSuggestion && !item.completed && (
                                   <button
                                     onClick={() => openCompleteDialog(item.order, courseId)}
-                                    className="px-4 sm:px-6 py-1.5 sm:py-2 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 hover:bg-cyan-500/30 hover:border-cyan-400/50 hover:text-white transition-all duration-200 font-medium text-xs sm:text-sm"
+                                    className="px-6 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 hover:bg-cyan-500/30 hover:border-cyan-400/50 hover:text-white transition-all duration-200 font-medium text-sm"
                                   >Mark Complete</button>
                                 )}
                               </div>
@@ -403,10 +332,6 @@ export default function DashboardPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* AI Chat */}
-        <AIChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-        <AIChatButton onClick={() => setIsChatOpen(true)} />
       </div>
     </ProtectedRoute>
   )

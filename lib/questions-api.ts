@@ -7,7 +7,7 @@ export interface Question {
     stepNumber: number;
     stepName: string;
   };
-  category: "student" | "professional";
+  category: string; // Allow any category from API
   optional: boolean;
   status: "active" | "inactive";
   documents: {
@@ -65,7 +65,7 @@ export interface AddQuestionRequest {
     stepNumber: number;
     stepName: string;
   };
-  category: "student" | "professional";
+  category: string; // Allow any category from API
   optional?: boolean;
   status?: "active" | "inactive";
   documents?: {

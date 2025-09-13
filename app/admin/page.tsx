@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { AdminSidebar } from "@/components/admin-sidebar"
 import { getApiUrl } from "@/lib/api-config"
+import { getAdminStats, AdminStatsData } from "@/lib/admin-stats-api"
 
 // Sidebar items now centralized in AdminSidebar component
 
@@ -35,6 +36,8 @@ export default function AdminDashboardPage() {
   const [majors, setMajors] = useState<MajorLite[]>([])
   const [isLoadingCourses, setIsLoadingCourses] = useState(true)
   const [isLoadingMajors, setIsLoadingMajors] = useState(true)
+  const [adminStats, setAdminStats] = useState<AdminStatsData | null>(null)
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
 
   const loadCourses = async () => {
     try {
@@ -58,23 +61,38 @@ export default function AdminDashboardPage() {
     } finally { setIsLoadingCourses(false) }
   }
 
-  const loadMajors = async () => {
+    const loadMajors = async () => {
     try {
       setIsLoadingMajors(true)
-      const res = await fetch(getApiUrl('/admin/majors?limit=100&status=active'), {
+      const res = await fetch(getApiUrl('/admin/majors?limit=50'), {
         headers: { 'Content-Type': 'application/json', ...(getAuthHeaders() as Record<string,string>) },
         credentials: 'include'
       })
       const text = await res.text(); const data = text ? JSON.parse(text) : {}
       if (!res.ok) throw new Error(data?.message || `Failed (${res.status})`)
-      const list = (data.data || data.majors || []).map((m:any): MajorLite => ({ _id: String(m._id||m.id), name: m.name }))
+      const list = (data.majors || data.data || []).map((m:any): MajorLite => ({ _id: String(m._id || m.id), name: m.name }))
       setMajors(list)
-    } catch (e:any) {
-      toast({ title: 'Failed to load majors', description: e.message || 'Try again.' })
+    } catch (err: any) {
+      console.error('Failed to load majors:', err.message)
+      toast({ title: 'Error loading majors', description: err.message, variant: 'destructive' })
     } finally { setIsLoadingMajors(false) }
   }
 
-  useEffect(() => { loadCourses(); loadMajors() // eslint-disable-next-line react-hooks/exhaustive-deps
+  const loadStats = async () => {
+    try {
+      setIsLoadingStats(true)
+      const authHeaders = getAuthHeaders() as Record<string, string>
+      const response = await getAdminStats(authHeaders)
+      setAdminStats(response.data)
+    } catch (err: any) {
+      console.error('Failed to load admin stats:', err.message)
+      toast({ title: 'Error loading stats', description: err.message, variant: 'destructive' })
+    } finally { 
+      setIsLoadingStats(false) 
+    }
+  }
+
+  useEffect(() => { loadCourses(); loadMajors(); loadStats() // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const courseCount = courses.length
@@ -99,23 +117,41 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Stats Cards (Dynamic) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6 mb-6 lg:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 lg:gap-6 mb-6 lg:mb-8">
             <div className="p-4 sm:p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20">
               <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">{isLoadingCourses ? '—' : courseCount}</div>
-                <div className="text-cyan-300 text-sm">Courses</div>
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">{isLoadingStats ? '—' : adminStats?.users.total || 0}</div>
+                <div className="text-cyan-300 text-sm">Total Users</div>
               </div>
             </div>
             <div className="p-4 sm:p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20">
               <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">{isLoadingMajors ? '—' : majorCount}</div>
-                <div className="text-cyan-300 text-sm">Majors</div>
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">{isLoadingStats ? '—' : adminStats?.courses.active || 0}</div>
+                <div className="text-cyan-300 text-sm">Active Courses</div>
               </div>
             </div>
-            <div className="p-4 sm:p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20 sm:col-span-2 lg:col-span-1">
+            <div className="p-4 sm:p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20">
               <div className="text-center">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">78%</div>
-                <div className="text-cyan-300 text-sm">Completion Rate</div>
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">{isLoadingStats ? '—' : adminStats?.roadmaps.plans || 0}</div>
+                <div className="text-cyan-300 text-sm">Roadmaps Generated</div>
+              </div>
+            </div>
+            <div className="p-4 sm:p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20">
+              <div className="text-center">
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">{isLoadingStats ? '—' : `${adminStats?.roadmaps.selectionRatePercent.toFixed(1) || 0}%`}</div>
+                <div className="text-cyan-300 text-sm">Selection Rate</div>
+              </div>
+            </div>
+            <div className="p-4 sm:p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20">
+              <div className="text-center">
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">{isLoadingStats ? '—' : `${adminStats?.progress.avgPlanCompletionPercent.toFixed(1) || 0}%`}</div>
+                <div className="text-cyan-300 text-sm">Avg Completion</div>
+              </div>
+            </div>
+            <div className="p-4 sm:p-6 rounded-xl backdrop-blur-xl bg-[#0e2439]/60 border border-cyan-400/30 shadow-lg shadow-cyan-400/20">
+              <div className="text-center">
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">{isLoadingStats ? '—' : `${adminStats?.roadmaps.aiSuccessRatePercent.toFixed(1) || 0}%`}</div>
+                <div className="text-cyan-300 text-sm">AI Success Rate</div>
               </div>
             </div>
           </div>

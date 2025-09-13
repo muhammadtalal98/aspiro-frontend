@@ -1,25 +1,48 @@
 "use client"
 import { useEffect, useMemo, useState } from "react"
-import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal, Plus, Eye, Edit, Trash2, ArrowUpDown } from "lucide-react"
-
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card"
 import { NeuroButton } from "@/components/ui/neuro-button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { DataTable } from "@/components/ui/data-table"
-import { Textarea } from "@/components/ui/textarea"
-
+import {
+  Users,
+  BookOpen,
+  Settings,
+  BarChart3,
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  Filter,
+  MoreHorizontal,
+  FileText,
+  User,
+  Square,
+  ChevronDown,
+  Users2,
+} from "lucide-react"
+import Link from "next/link"
 import AdminOnly from "../AdminOnly"
 import { useAuth } from "@/lib/auth-context"
+import { LogOut } from "lucide-react"
 import { AdminSidebar } from "@/components/admin-sidebar"
+import { Textarea } from "@/components/ui/textarea"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { useToast } from "@/hooks/use-toast"
 import { getApiUrl } from "@/lib/api-config"
 import { aiGenerateCourses } from "@/lib/admin-courses-api"
+
+const adminSidebarItems = [
+ { icon: BarChart3, label: "Dashboard", href: "/admin", number: "1" },
+  { icon: BookOpen, label: "Courses", href: "/admin/courses",active: true  },
+  { icon: Users2, label: "Majors", href: "/admin/majors" },
+
+  { icon: User, label: "Users", href: "/admin/users" },
+  // { icon: FileText, label: "Questionnaires", href: "/admin/questionnaires" }
+]
 
 type CourseStatus = 'active' | 'draft' | 'inactive'
 interface CourseDTO {
@@ -48,18 +71,15 @@ export default function CoursesManagement() {
   const [courses, setCourses] = useState<CourseDTO[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isFetching, setIsFetching] = useState(false)
-  
   // Majors dropdown data
   const [majors, setMajors] = useState<{ _id: string; name: string }[]>([])
   const [isMajorsLoading, setIsMajorsLoading] = useState(false)
 
-  // Pagination state
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 20,
-    pageCount: 1,
-    total: 0,
-  })
+  // Pagination (basic)
+  const [page, setPage] = useState(1)
+  const [pages, setPages] = useState(1)
+  const [total, setTotal] = useState(0)
+  const limit = 20
 
   // Dialog state
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -94,7 +114,7 @@ export default function CoursesManagement() {
   const validateCourse = (data: Partial<CourseDTO> & { price?: number; durationWeeks?: number }) => {
     const errors: Record<string, string> = {}
     if (!data.title || !data.title.trim()) errors.title = 'Title is required'
-    if (!data.category || !data.category.trim()) errors.category = 'Major is required'
+  if (!data.category || !data.category.trim()) errors.category = 'Major is required'
     if (data.durationWeeks === undefined || data.durationWeeks === null || isNaN(Number(data.durationWeeks)) || Number(data.durationWeeks) <= 0) errors.durationWeeks = 'Duration must be > 0'
     if (!data.instructor || !data.instructor.trim()) errors.instructor = 'Instructor is required'
     if (data.price === undefined || data.price === null || isNaN(Number(data.price)) || Number(data.price) < 0) errors.price = 'Price must be >= 0'
@@ -102,16 +122,20 @@ export default function CoursesManagement() {
     return errors
   }
 
+  const buildQuery = () => {
+    const params = new URLSearchParams()
+    if (searchTerm.trim()) params.append('q', searchTerm.trim())
+    if (selectedStatus !== 'all') params.append('status', selectedStatus)
+    if (page > 1) params.append('page', String(page))
+    params.append('limit', String(limit))
+    return params.toString()
+  }
+
   const loadCourses = async () => {
     try {
-      setIsFetching(true)
-      const params = new URLSearchParams()
-      if (searchTerm.trim()) params.append('q', searchTerm.trim())
-      if (selectedStatus !== 'all') params.append('status', selectedStatus)
-      params.append('page', String(pagination.pageIndex + 1))
-      params.append('limit', String(pagination.pageSize))
-
-      const res = await fetch(getApiUrl(`/admin/courses?${params.toString()}`), {
+      if (!isLoading) setIsFetching(true)
+      const query = buildQuery()
+      const res = await fetch(getApiUrl(`/admin/courses${query ? `?${query}` : ''}`), {
         headers: { 'Content-Type': 'application/json', ...(getAuthHeaders() as Record<string,string>) },
         credentials: 'include'
       })
@@ -119,11 +143,8 @@ export default function CoursesManagement() {
       const data = await res.json()
       if (data.success && Array.isArray(data.courses)) {
         setCourses(data.courses)
-        setPagination(prev => ({
-          ...prev,
-          total: data.total || data.courses.length,
-          pageCount: data.pages || Math.ceil((data.total || data.courses.length) / prev.pageSize)
-        }))
+        setTotal(data.total || data.courses.length)
+        setPages(data.pages || 1)
       } else {
         throw new Error('Invalid response')
       }
@@ -138,7 +159,7 @@ export default function CoursesManagement() {
   useEffect(() => {
     loadCourses()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.pageIndex, pagination.pageSize])
+  }, [page])
 
   // Load majors once for dropdown
   useEffect(() => {
@@ -164,127 +185,6 @@ export default function CoursesManagement() {
 
   const filteredCourses = useMemo(() => courses, [courses])
 
-  // Define columns for the data table
-  const columns: ColumnDef<CourseDTO>[] = [
-    {
-      accessorKey: "title",
-      header: ({ column }) => {
-        return (
-          <NeuroButton
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="h-auto p-0 hover:bg-transparent text-white font-medium"
-          >
-            Title
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </NeuroButton>
-        )
-      },
-      cell: ({ row }) => {
-        const course = row.original
-        return (
-          <div>
-            <p className="font-medium text-white text-sm">{course.title}</p>
-            <p className="text-xs text-cyan-300 sm:hidden">{course.category} • {course.durationWeeks}w</p>
-            <p className="text-xs text-cyan-300 hidden sm:block lg:hidden">{course.description ? course.description.slice(0,30) + (course.description.length>30?'...':'') : course.instructor}</p>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "category",
-      header: "Major",
-      cell: ({ row }) => {
-        const category = row.getValue("category") as string
-        return <span className="text-sm text-cyan-300 hidden sm:table-cell">{category}</span>
-      },
-    },
-    {
-      accessorKey: "durationWeeks",
-      header: "Duration",
-      cell: ({ row }) => {
-        const duration = row.getValue("durationWeeks") as number
-        return <span className="text-sm text-cyan-300 hidden md:table-cell">{duration} w</span>
-      },
-    },
-    {
-      accessorKey: "instructor",
-      header: "Instructor",
-      cell: ({ row }) => {
-        const instructor = row.getValue("instructor") as string
-        return <span className="text-sm text-cyan-300 hidden lg:table-cell">{instructor}</span>
-      },
-    },
-    {
-      accessorKey: "students",
-      header: "Students",
-      cell: ({ row }) => {
-        const students = row.getValue("students") as number
-        return <span className="text-sm text-cyan-300">{students}</span>
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string
-        return (
-          <Badge className={`${getStatusColor(status)} text-xs font-medium capitalize`}>
-            {status}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: "price",
-      header: "Price",
-      cell: ({ row }) => {
-        const price = row.getValue("price") as number
-        return <span className="text-sm text-cyan-300 hidden sm:table-cell">${price}</span>
-      },
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const course = row.original
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <NeuroButton variant="ghost" className="h-8 w-8 p-0 text-cyan-100 hover:bg-cyan-400/10">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </NeuroButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-[#0e2439]/90 backdrop-blur-xl border border-cyan-400/30">
-              <DropdownMenuItem 
-                onClick={() => { setSelectedCourse(course); setIsViewOpen(true) }}
-                className="text-white hover:bg-cyan-400/10 cursor-pointer"
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                View
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => openEdit(course)}
-                className="text-white hover:bg-cyan-400/10 cursor-pointer"
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => setPendingDeleteId(course._id)}
-                className="text-red-300 hover:bg-red-500/10 cursor-pointer"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
-    },
-  ]
-
   const openAdd = () => {
     setAddForm({ ...emptyCourse })
     setFormErrors({})
@@ -306,9 +206,9 @@ export default function CoursesManagement() {
       })
       const data = await res.json().catch(()=>({}))
       if (!res.ok) throw new Error(data?.message || `Create failed (${res.status})`)
+      setCourses(prev => [data.course as CourseDTO, ...prev])
       setIsAddOpen(false)
       toast({ title: 'Course created' })
-      loadCourses()
     } catch (e: any) {
       toast({ title: 'Create failed', description: e.message || 'Check inputs.' })
     } finally { setIsSaving(false) }
@@ -338,9 +238,9 @@ export default function CoursesManagement() {
       })
       const data = await res.json().catch(()=>({}))
       if (!res.ok) throw new Error(data?.message || `Update failed (${res.status})`)
+      setCourses(prev => prev.map(c => c._id === selectedCourse._id ? data.course as CourseDTO : c))
       setIsEditOpen(false)
       toast({ title: 'Course updated' })
-      loadCourses()
     } catch (e: any) {
       toast({ title: 'Update failed', description: e.message || 'Try again.' })
     } finally { setIsSaving(false) }
@@ -356,46 +256,15 @@ export default function CoursesManagement() {
       })
       const data = await res.json().catch(()=>({}))
       if (!res.ok) throw new Error(data?.message || `Delete failed (${res.status})`)
+      setCourses(prev => prev.filter(c => c._id !== pendingDeleteId))
       toast({ title: 'Course deleted' })
-      loadCourses()
     } catch (e: any) {
       toast({ title: 'Delete failed', description: e.message || 'Try again.' })
     } finally { setPendingDeleteId(null) }
   }
 
-  const handleSearch = () => {
-    setPagination(prev => ({ ...prev, pageIndex: 0 }))
-    setTimeout(() => loadCourses(), 0)
-  }
-
   const isAddValid = Object.keys(validateCourse(addForm)).length === 0
   const isEditValid = Object.keys(validateCourse(editForm)).length === 0
-
-  const filterComponent = (
-    <select
-      value={selectedStatus}
-      onChange={(e) => { setSelectedStatus(e.target.value); setPagination(prev => ({ ...prev, pageIndex: 0 })); setTimeout(()=>loadCourses(),0) }}
-      className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white min-w-[120px]"
-    >
-      <option value="all">All Status</option>
-      <option value="active">Active</option>
-      <option value="draft">Draft</option>
-      <option value="inactive">Inactive</option>
-    </select>
-  )
-
-  const toolbar = (
-    <div className="flex items-center gap-2 flex-wrap">
-      <NeuroButton onClick={openAdd} className="flex items-center gap-2 bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30 text-sm">
-        <Plus className="h-4 w-4" />
-        Add Course
-      </NeuroButton>
-      <NeuroButton onClick={()=>{ setAiGenTopic(''); setAiGenCount(8); setIsAIGenOpen(true) }} className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-cyan-500/40 hover:from-cyan-400 hover:to-blue-400 text-sm">
-        <Plus className="h-4 w-4" />
-        AI Generate
-      </NeuroButton>
-    </div>
-  )
 
   return (
     <AdminOnly>
@@ -413,31 +282,117 @@ export default function CoursesManagement() {
               </div>
               {isFetching && <LoadingSpinner size="sm" />}
             </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <NeuroButton onClick={openAdd} className="flex items-center gap-2 bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30 text-sm">
+                <Plus className="h-4 w-4" />
+                Add Course
+              </NeuroButton>
+              <NeuroButton onClick={()=>{ setAiGenTopic(''); setAiGenCount(8); setIsAIGenOpen(true) }} className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-cyan-500/40 hover:from-cyan-400 hover:to-blue-400 text-sm">
+                <Plus className="h-4 w-4" />
+                AI Generate
+              </NeuroButton>
+              <NeuroButton variant="outline" size="sm" onClick={() => { setPage(1); loadCourses() }} className="border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/10 text-sm">Reload</NeuroButton>
+            </div>
           </div>
 
-          {/* Courses DataTable */}
+          {/* Filters and Search */}
+          <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20 mb-4 lg:mb-6">
+            <GlassCardContent className="p-4 sm:p-6">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-cyan-300" />
+                    <Input
+                      placeholder="Search courses..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 focus:border-cyan-400/60 text-white placeholder-cyan-300/50 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); setTimeout(()=>loadCourses(),0) }}
+                    className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white min-w-[120px]"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="draft">Draft</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                  <NeuroButton variant="outline" size="sm" onClick={() => { setPage(1); loadCourses() }} className="border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/10">
+                    <Filter className="h-4 w-4" />
+                  </NeuroButton>
+                </div>
+              </div>
+            </GlassCardContent>
+          </GlassCard>
+
+          {/* Courses Table */}
           <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20">
             <GlassCardHeader className="p-4 sm:p-6 pb-0">
-              <GlassCardTitle className="text-white text-lg sm:text-xl">Courses ({pagination.total})</GlassCardTitle>
+              <GlassCardTitle className="text-white text-lg sm:text-xl">Courses ({filteredCourses.length})</GlassCardTitle>
             </GlassCardHeader>
             <GlassCardContent className="p-4 sm:p-6">
-              <DataTable
-                columns={columns}
-                data={filteredCourses}
-                searchPlaceholder="Search courses..."
-                isLoading={isLoading}
-                onRefresh={loadCourses}
-                filterComponent={filterComponent}
-                toolbar={toolbar}
-                pagination={{
-                  pageIndex: pagination.pageIndex,
-                  pageSize: pagination.pageSize,
-                  pageCount: pagination.pageCount,
-                  total: pagination.total,
-                  onPageChange: (pageIndex) => setPagination(prev => ({ ...prev, pageIndex })),
-                  onPageSizeChange: (pageSize) => setPagination(prev => ({ ...prev, pageSize, pageIndex: 0 })),
-                }}
-              />
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <table className="w-full min-w-[800px] sm:min-w-0">
+                  <thead>
+                    <tr className="border-b border-cyan-400/20">
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Title</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm hidden sm:table-cell">Major</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm hidden md:table-cell">Duration</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm hidden lg:table-cell">Instructor</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Students</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Status</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm hidden sm:table-cell">Price</th>
+                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      <tr><td colSpan={8} className="py-8 text-center text-cyan-300"><LoadingSpinner text="Loading courses..." /></td></tr>
+                    ) : filteredCourses.length === 0 ? (
+                      <tr><td colSpan={8} className="py-8 text-center text-cyan-300">No courses found</td></tr>
+                    ) : (
+                      filteredCourses.map(course => (
+                        <tr key={course._id} className="border-b border-cyan-400/10 hover:bg-cyan-400/5 transition-all duration-300">
+                          <td className="py-4 px-2 sm:px-4">
+                            <div>
+                              <p className="font-medium text-white text-sm">{course.title}</p>
+                              <p className="text-xs text-cyan-300 sm:hidden">{course.category} • {course.durationWeeks}w</p>
+                              <p className="text-xs text-cyan-300 hidden sm:block lg:hidden">{course.description ? course.description.slice(0,30) + (course.description.length>30?'...':'') : course.instructor}</p>
+                            </div>
+                          </td>
+                          <td className="py-4 px-2 sm:px-4 text-sm text-cyan-300 hidden sm:table-cell">{course.category}</td>
+                          <td className="py-4 px-2 sm:px-4 text-sm text-cyan-300 hidden md:table-cell">{course.durationWeeks} w</td>
+                          <td className="py-4 px-2 sm:px-4 text-sm text-cyan-300 hidden lg:table-cell">{course.instructor}</td>
+                          <td className="py-4 px-2 sm:px-4 text-sm text-cyan-300">{course.students}</td>
+                          <td className="py-4 px-2 sm:px-4"><Badge className={`${getStatusColor(course.status)} text-xs font-medium capitalize`}>{course.status}</Badge></td>
+                          <td className="py-4 px-2 sm:px-4 text-sm text-cyan-300 hidden sm:table-cell">${course.price}</td>
+                          <td className="py-4 px-2 sm:px-4">
+                            <div className="flex items-center gap-1 sm:gap-2">
+                              <NeuroButton variant="ghost" size="sm" title="View" onClick={() => { setSelectedCourse(course); setIsViewOpen(true) }} className="text-cyan-100 hover:bg-cyan-400/10 p-1 sm:p-2"><Eye className="h-3 w-3 sm:h-4 sm:w-4" /></NeuroButton>
+                              <NeuroButton variant="ghost" size="sm" title="Edit" onClick={() => openEdit(course)} className="text-cyan-100 hover:bg-cyan-400/10 p-1 sm:p-2"><Edit className="h-3 w-3 sm:h-4 sm:w-4" /></NeuroButton>
+                              <NeuroButton variant="ghost" size="sm" title="Delete" onClick={() => setPendingDeleteId(course._id)} className="text-red-300 hover:bg-red-500/10 p-1 sm:p-2"><Trash2 className="h-3 w-3 sm:h-4 sm:w-4" /></NeuroButton>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {/* Pagination */}
+              {pages > 1 && (
+                <div className="flex items-center justify-between mt-4 text-cyan-300 text-sm">
+                  <span>Page {page} of {pages}</span>
+                  <div className="flex gap-2">
+                    <NeuroButton variant="outline" size="sm" disabled={page===1} onClick={() => setPage(p => Math.max(1,p-1))} className="border-cyan-400/30">Prev</NeuroButton>
+                    <NeuroButton variant="outline" size="sm" disabled={page===pages} onClick={() => setPage(p => Math.min(pages,p+1))} className="border-cyan-400/30">Next</NeuroButton>
+                  </div>
+                </div>
+              )}
             </GlassCardContent>
           </GlassCard>
 
@@ -604,7 +559,7 @@ export default function CoursesManagement() {
                   toast({ title: 'AI generation complete', description: `${res.inserted || (res.courses?.length || 0)} courses added.` })
                   setIsAIGenOpen(false)
                   // reload first page
-                  setPagination(prev => ({ ...prev, pageIndex: 0 }))
+                  setPage(1)
                   setTimeout(()=> loadCourses(), 50)
                 } catch (e:any) {
                   toast({ title: 'Generation failed', description: e.message || 'Try again.' })

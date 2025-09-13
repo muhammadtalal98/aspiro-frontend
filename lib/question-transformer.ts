@@ -236,7 +236,7 @@ const generateMaxFiles = (question: Question): number => {
   return 1;
 };
 
-export function transformQuestionsToSteps(questions: Question[]): OnboardingStep[] {
+export function transformQuestionsToSteps(questions: Question[], options?: { randomize?: boolean }): OnboardingStep[] {
   // Sort questions with specific priority: User type first, then CV upload, then others
   const sortedQuestions = questions
     .filter(q => q.status === "active")
@@ -277,7 +277,7 @@ export function transformQuestionsToSteps(questions: Question[]): OnboardingStep
     });
 
 
-  const steps: OnboardingStep[] = sortedQuestions.map((question, index) => {
+  let steps: OnboardingStep[] = sortedQuestions.map((question, index) => {
     const stepType = mapQuestionType(question.type);
     // Defensive: normalize options
     let normalizedOptions: string[] | undefined = undefined;
@@ -293,7 +293,7 @@ export function transformQuestionsToSteps(questions: Question[]): OnboardingStep
       }
     }
     
-    const step = {
+  const step: OnboardingStep = {
       id: question._id,
       title: question.text,
       subtitle: generateSubtitle(question),
@@ -306,12 +306,24 @@ export function transformQuestionsToSteps(questions: Question[]): OnboardingStep
       maxFiles: question.type === "upload" ? generateMaxFiles(question) : undefined,
       stepNumber: question.step.stepNumber,
       stepName: question.step.stepName,
-      category: question.category,
+  // Backend may return other categories; coerce to allowed union with fallback
+  category: (question.category === 'professional' ? 'professional' : 'student'),
     };
     
     
     return step;
   });
+
+  // If randomize option enabled, shuffle everything after first two prioritized steps (user type + CV upload)
+  if (options?.randomize) {
+    const head = steps.slice(0, 2); // keep first two fixed
+    const rest = steps.slice(2);
+    for (let i = rest.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [rest[i], rest[j]] = [rest[j], rest[i]];
+    }
+    steps = [...head, ...rest];
+  }
 
   // Add completion step at the end
   steps.push({

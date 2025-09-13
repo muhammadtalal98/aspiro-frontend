@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import { OnboardingStep } from "@/lib/question-transformer"
 import { saveUserResponses, UserResponse } from "@/lib/user-response-api"
+import { UnifiedLoader } from "@/components/unified-loader"
 
 interface PreviewQuestion extends OnboardingStep {
   answer: any
@@ -160,7 +161,11 @@ export default function PreviewPage() {
     
     console.log("Preparing user responses for", questions.length, "questions")
     
+    const syntheticIds = new Set(['select-category','upload-cv']);
     questions.forEach(question => {
+      if (syntheticIds.has(question.id)) {
+        return; // skip synthetic / non-backend questions
+      }
       let response: UserResponse = {
         questionId: question.id
       }
@@ -248,8 +253,8 @@ export default function PreviewPage() {
       })
       
       // Only add response if it has an answer
-      if (response.answerText || response.answerChoice || 
-          response.answerLink || response.files) {
+    if (response.answerText || response.answerChoice || 
+      response.answerLink || response.files) {
         responses.push(response)
       }
     })
@@ -299,6 +304,27 @@ export default function PreviewPage() {
       
       if (result.success) {
         console.log('Responses saved successfully:', result)
+        try { console.log('[Preview] Raw backend data keys:', Object.keys((result as any).data || {})) } catch {}
+        try { console.log('[Preview] Raw backend data:', (result as any).data) } catch {}
+        // Persist generated roadmaps like original onboarding flow
+        try {
+          const gen = (result as any)?.data?.generatedRoadmaps;
+          if (gen?.suggestions && Array.isArray(gen.suggestions)) {
+            localStorage.setItem('generatedRoadmaps', JSON.stringify({ roadmaps: gen.suggestions }));
+          } else {
+            const rms = (result as any)?.data?.roadmaps;
+            if (rms && Array.isArray(rms)) {
+              localStorage.setItem('generatedRoadmaps', JSON.stringify({ roadmaps: rms }));
+            } else {
+              const rc = (result as any)?.data?.recommendedCourses;
+              if (rc && Array.isArray(rc)) {
+                localStorage.setItem('generatedRoadmaps', JSON.stringify({ roadmaps: [{ id: 'temp', title: 'Suggested Path', courses: rc }] }));
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[Preview] Failed to persist generated roadmaps', e);
+        }
         
         // Update user progress
         updateUser({ 
@@ -317,7 +343,8 @@ export default function PreviewPage() {
           localStorage.removeItem("onboardingSteps")
           
           // Redirect to analyzing page
-          router.push('/analyzing')
+          // After submission, ask path preference next
+          router.push('/roadmaps/preference')
         }, 100)
       } else {
         throw new Error(result.message || 'Failed to save responses')
@@ -500,12 +527,13 @@ export default function PreviewPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0e2439] flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-cyan-400 mx-auto mb-4" />
-          <p className="text-cyan-100">Loading preview...</p>
-        </div>
-      </div>
+      <ProtectedRoute requireAuth>
+        <UnifiedLoader
+          title="Preparing your review"
+          message="Loading your answers..."
+          subMessage="One moment while we prepare the preview"
+        />
+      </ProtectedRoute>
     )
   }
 
@@ -645,17 +673,13 @@ export default function PreviewPage() {
 
           {/* Loading Overlay */}
           {isSubmitting && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-              <GlassCard className="max-w-sm w-full border-cyan-400/20">
-                <GlassCardContent className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-cyan-400 mx-auto mb-4" />
-                  <h3 className="text-cyan-100 font-semibold mb-2">Saving Your Responses</h3>
-                  <p className="text-cyan-300 text-sm">
-                    Please wait while we process and save your data...
-                  </p>
-                </GlassCardContent>
-              </GlassCard>
-            </div>
+            <UnifiedLoader
+              title="Finalizing your submission"
+              message="Saving responses and generating roadmaps..."
+              subMessage="This won't take long"
+              showProgressBar
+              progressPercent={70}
+            />
           )}
         </div>
       </div>

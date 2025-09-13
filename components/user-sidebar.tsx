@@ -2,29 +2,16 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, BookOpen, Users2, User, FileText, HelpCircle, LogOut, X, Menu, Brain } from 'lucide-react'
+import { BarChart3, Settings, LogOut, X, Menu, GraduationCap } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 
-interface NavItem {
-  label: string
-  href: string
-  icon: any
-  number?: string
-}
-
 const sidebarItems = [
-  { icon: BarChart3, label: "Dashboard", href: "/admin" },
-  { icon: BookOpen, label: "Courses", href: "/admin/courses" },
-  { icon: Users2, label: "Majors", href: "/admin/majors" },
-  { icon: User, label: "Users", href: "/admin/users" },
-  { icon: HelpCircle, label: "Questions", href: "/admin/questions" },
-  { icon: FileText, label: "User Types", href: "/admin/user-types" },
-  // { icon: Brain, label: "AI Processing", href: "/admin/ai-processing" },
-  // { icon: FileText, label: "Questionnaires", href: "/admin/questionnaires" },
-  // { icon: BarChart3, label: "Reports", href: "/admin/reports" },
+  { icon: BarChart3, label: "Dashboard", href: "/dashboard" },
+  { icon: GraduationCap, label: "Roadmaps", href: "/userroadmap" },
+  { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ]
 
-export function AdminSidebar() {
+export function UserSidebar() {
   const pathname = usePathname()
   const { logout } = useAuth()
   const [open, setOpen] = useState(false)
@@ -51,7 +38,7 @@ export function AdminSidebar() {
               <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2M21 9V7L15 1H5C3.89 1 3 1.89 3 3V19A2 2 0 0 0 5 21H11V19H5V3H13V9H21M17.5 22C15.57 22 14 20.43 14 18.5C14 16.57 15.57 15 17.5 15C19.43 15 21 16.57 21 18.5C21 20.43 19.43 22 17.5 22M16 17V19H17.5V20.5H19V19H17.5V17.5H16V17Z"/>
             </svg>
           </div>
-          <span className="text-white font-semibold text-sm truncate">Asprio</span>
+          <span className="text-white font-semibold text-sm truncate">Aspiro</span>
         </div>
         <button 
           onClick={() => setOpen(true)} 

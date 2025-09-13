@@ -114,14 +114,14 @@ export default function DocumentUploadWithPreFill({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* File Upload Area */}
       <div
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${
+        className={`relative border-2 border-dashed rounded-xl p-4 sm:p-6 lg:p-8 text-center transition-all duration-300 ${
           dragActive 
             ? "border-cyan-400 bg-cyan-400/10" 
             : "border-cyan-400/30 hover:border-cyan-400/50"
@@ -137,21 +137,21 @@ export default function DocumentUploadWithPreFill({
           disabled={disabled}
         />
         
-        <div className="space-y-4">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center">
-            <Upload className="h-8 w-8 text-cyan-400" />
+        <div className="space-y-3 sm:space-y-4">
+          <div className="mx-auto flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center">
+            <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400" />
           </div>
           <div>
-            <p className="text-xl font-medium text-white mb-2">
+            <p className="text-lg sm:text-xl font-medium text-white mb-2">
               Upload your CV and supporting documents
             </p>
-            <p className="text-cyan-300/80 mb-4">
+            <p className="text-cyan-300/80 mb-3 sm:mb-4 text-sm sm:text-base">
               Drag and drop files here or click to browse
             </p>
-            <p className="text-sm text-cyan-300/60">
+            <p className="text-xs sm:text-sm text-cyan-300/60">
               Supported formats: PDF, Word, Images (JPG, PNG, TIFF), Text files
             </p>
-            <p className="text-sm text-cyan-300/60">
+            <p className="text-xs sm:text-sm text-cyan-300/60">
               Maximum file size: 5MB per file
             </p>
           </div>
@@ -161,21 +161,21 @@ export default function DocumentUploadWithPreFill({
       {/* Uploaded Files */}
       {uploadedFiles.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-lg font-medium text-cyan-100">Uploaded Documents</h3>
+          <h3 className="text-base sm:text-lg font-medium text-cyan-100">Uploaded Documents</h3>
           <div className="space-y-2">
             {uploadedFiles.map((file, index) => (
-              <div key={index} className="flex items-center gap-3 p-4 bg-cyan-400/10 border border-cyan-400/20 rounded-lg">
-                <div className="text-2xl">{getFileIcon(file)}</div>
+              <div key={index} className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-cyan-400/10 border border-cyan-400/20 rounded-lg">
+                <div className="text-xl sm:text-2xl flex-shrink-0">{getFileIcon(file)}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-cyan-100 truncate">{file.name}</p>
-                  <p className="text-xs text-cyan-300/80">{formatFileSize(file.size)}</p>
+                  <p className="text-sm sm:text-base font-medium text-cyan-100 truncate">{file.name}</p>
+                  <p className="text-xs sm:text-sm text-cyan-300/80">{formatFileSize(file.size)}</p>
                 </div>
                 <button
                   onClick={() => removeFile(index)}
-                  className="p-2 hover:bg-red-400/10 rounded-full transition-colors duration-300"
+                  className="p-1.5 sm:p-2 hover:bg-red-400/10 rounded-full transition-colors duration-300 flex-shrink-0"
                   disabled={disabled}
                 >
-                  <X className="h-4 w-4 text-red-400" />
+                  <X className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" />
                 </button>
               </div>
             ))}
@@ -189,16 +189,16 @@ export default function DocumentUploadWithPreFill({
           <button
             onClick={handlePreFill}
             disabled={isProcessing || disabled}
-            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-400 hover:to-cyan-400 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none flex items-center gap-2 mx-auto"
+            className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-400 hover:to-cyan-400 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none flex items-center gap-2 mx-auto text-sm sm:text-base"
           >
             {isProcessing ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
                 <span>Processing Documents...</span>
               </>
             ) : (
               <>
-                <Brain className="h-5 w-5" />
+                <Brain className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>Pre-fill Questions with AI</span>
               </>
             )}
@@ -208,39 +208,39 @@ export default function DocumentUploadWithPreFill({
 
       {/* Pre-fill Results */}
       {preFillResults && (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 text-green-400">
-            <CheckCircle className="h-5 w-5" />
-            <span className="font-medium">Pre-fill Processing Complete!</span>
+            <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="font-medium text-sm sm:text-base">Pre-fill Processing Complete!</span>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-green-400/10 border border-green-400/30 rounded-lg">
-              <div className="text-2xl font-bold text-green-400">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="p-3 sm:p-4 bg-green-400/10 border border-green-400/30 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-green-400">
                 {preFillResults.metadata?.autoFillCount || 0}
               </div>
-              <div className="text-sm text-green-300">Auto-filled Questions</div>
+              <div className="text-xs sm:text-sm text-green-300">Auto-filled Questions</div>
             </div>
             
-            <div className="p-4 bg-purple-400/10 border border-purple-400/30 rounded-lg">
-              <div className="text-2xl font-bold text-purple-400">
+            <div className="p-3 sm:p-4 bg-purple-400/10 border border-purple-400/30 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-purple-400">
                 {preFillResults.metadata?.aiSuggestionsCount || 0}
               </div>
-              <div className="text-sm text-purple-300">AI Suggestions</div>
+              <div className="text-xs sm:text-sm text-purple-300">AI Suggestions</div>
             </div>
             
-            <div className="p-4 bg-orange-400/10 border border-orange-400/30 rounded-lg">
-              <div className="text-2xl font-bold text-orange-400">
+            <div className="p-3 sm:p-4 bg-orange-400/10 border border-orange-400/30 rounded-lg sm:col-span-2 lg:col-span-1">
+              <div className="text-xl sm:text-2xl font-bold text-orange-400">
                 {preFillResults.metadata?.noMatchCount || 0}
               </div>
-              <div className="text-sm text-orange-300">Manual Input Required</div>
+              <div className="text-xs sm:text-sm text-orange-300">Manual Input Required</div>
             </div>
           </div>
 
           {preFillResults.data?.summary && (
-            <div className="p-4 bg-cyan-400/10 border border-cyan-400/30 rounded-lg">
-              <h4 className="font-medium text-cyan-100 mb-2">Processing Summary</h4>
-              <div className="text-sm text-cyan-300 space-y-1">
+            <div className="p-3 sm:p-4 bg-cyan-400/10 border border-cyan-400/30 rounded-lg">
+              <h4 className="font-medium text-cyan-100 mb-2 text-sm sm:text-base">Processing Summary</h4>
+              <div className="text-xs sm:text-sm text-cyan-300 space-y-1">
                 <p>Auto-fill Success Rate: {preFillResults.data.summary.autoFillSuccessRate.toFixed(1)}%</p>
                 <p>AI Suggestion Success Rate: {preFillResults.data.summary.aiSuggestionSuccessRate.toFixed(1)}%</p>
                 <p>Total Questions Processed: {preFillResults.data.summary.totalQuestions}</p>

@@ -8,6 +8,14 @@ export interface PreFillResponse {
   success: boolean;
   message: string;
   data?: {
+    category?: string;
+    questions?: Array<{
+      _id: string;
+      text: string;
+      type: string; // multiple-choice, text, yes/no, link, upload
+      options?: string[];
+      generatedOptions?: boolean;
+    }>;
     preFilledAnswers: Record<string, PreFillAnswer>;
     questionMappings: {
       autoFill: QuestionMapping[];
@@ -130,7 +138,8 @@ export interface ProcessingSummary {
  */
 export async function preFillQuestions(
   files: File[],
-  token: string
+  token: string,
+  category?: string
 ): Promise<PreFillResponse> {
   try {
     if (!files || files.length === 0) {
@@ -141,9 +150,8 @@ export async function preFillQuestions(
     const formData = new FormData();
     
     // Add files
-    files.forEach(file => {
-      formData.append('files', file);
-    });
+  files.forEach(file => { formData.append('files', file); });
+  if (category) formData.append('category', category);
 
 
     const response = await fetch(getApiUrl('/user-response/prefill'), {

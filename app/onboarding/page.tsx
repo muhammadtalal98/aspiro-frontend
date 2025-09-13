@@ -32,11 +32,13 @@ import { useRouter } from "next/navigation"
 import ProtectedRoute from "@/components/ProtectedRoute"
 
 import { useIsMobile } from "@/hooks/use-mobile"
-import { fetchQuestions } from "@/lib/questions-api"
-import { transformQuestionsToSteps, OnboardingStep } from "@/lib/question-transformer"
+// Removed initial generic questions fetch; we only get dynamic questions after CV pre-fill
+import { OnboardingStep } from "@/lib/question-transformer"
+import { fetchCategories, UserCategory } from "@/lib/categories-api"
 import { saveUserResponses, UserResponse } from "@/lib/user-response-api"
 
 import { preFillQuestions, PreFillResponse, applyPreFilledAnswers } from "@/lib/prefill-api"
+import { UnifiedLoader } from "@/components/unified-loader"
 
 
 
@@ -55,8 +57,10 @@ export default function OnboardingPage() {
   const [preFillData, setPreFillData] = useState<PreFillResponse | null>(null)
   const [isProcessingCV, setIsProcessingCV] = useState(false)
   const [cvProcessingError, setCvProcessingError] = useState<string | null>(null)
+  const [categories, setCategories] = useState<UserCategory[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
-  const { user, updateUser, getToken } = useAuth()
+  const { user, updateUser, getToken, logout } = useAuth()
   const router = useRouter()
   const isMobile = useIsMobile()
 
@@ -96,41 +100,65 @@ export default function OnboardingPage() {
 // }, [onboardingSteps, cvSuggestions.autoFilled]);
 
 
-  // Fetch questions from backend
+  // Initial load: only fetch categories & create two hardcoded steps (category + CV upload)
   useEffect(() => {
-    const loadQuestions = async () => {
-      // Get token using the auth context method
+    const init = async () => {
       const token = getToken();
-      
       if (!token) {
         setError("No authentication token found");
         setIsLoading(false);
         return;
       }
-
       try {
         setIsLoading(true);
         setError(null);
-        
-        const questions = await fetchQuestions(token);
-        const steps = transformQuestionsToSteps(questions);
-        setOnboardingSteps(steps);
+        const cats = await fetchCategories();
+        setCategories(cats);
+
+        const categoryStep: OnboardingStep = {
+          id: 'select-category',
+          title: 'Select your user category',
+          subtitle: 'Tell us whether you are a student or professional so we can personalize the questions',
+          icon: Brain,
+          type: 'select',
+          options: cats.length ? cats.map(c => c.name) : ['Student', 'Professional'],
+          placeholder: undefined,
+          required: true,
+          stepNumber: 0,
+          stepName: 'Category',
+          category: 'student'
+        };
+        const cvUploadStep: OnboardingStep = {
+          id: 'upload-cv',
+          title: 'Upload your CV (PDF)',
+          subtitle: 'We will analyze your CV to pre-fill many answers for you automatically',
+          icon: Upload,
+            type: 'file',
+          required: true,
+          fileTypes: ['.pdf', '.doc', '.docx'],
+          maxFiles: 1,
+          stepNumber: 1,
+          stepName: 'CV Upload',
+          category: 'student'
+        };
+        setOnboardingSteps([categoryStep, cvUploadStep]);
       } catch (err) {
-        console.error("Failed to load questions:", err);
-        setError(err instanceof Error ? err.message : "Failed to load questions");
+        console.error('Failed to initialize onboarding:', err);
+        setError(err instanceof Error ? err.message : 'Failed to initialize onboarding');
       } finally {
         setIsLoading(false);
       }
     };
-
-    loadQuestions();
-  }, [user]); // Depend on user instead of user.token
+    init();
+  }, [user]);
 
   // Auto-redirect to preview when completion step is reached
   useEffect(() => {
     if (onboardingSteps.length > 0 && currentStep < onboardingSteps.length && onboardingSteps[currentStep]?.type === "completion") {
       const timer = setTimeout(() => {
-        handleSaveResponses();
+  // Instead of auto-saving (which skipped the review), route to the preview page
+  // so the user can edit answers before final submission.
+  handleGoToPreview();
       }, 1500)
       return () => clearTimeout(timer)
     }
@@ -152,28 +180,21 @@ export default function OnboardingPage() {
   // Show loading state
   if (isLoading) {
     return (
-
-      <ProtectedRoute requireAuth={true} requireOnboarding={true}>
-
-        <div className="min-h-screen bg-[#0e2439] flex items-center justify-center">
-          <div className="text-center space-y-6">
-            <Loader2 className="h-12 w-12 text-cyan-400 animate-spin mx-auto" />
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-cyan-100">Loading Questions</h2>
-              <p className="text-cyan-300/80">Please wait while we prepare your onboarding experience...</p>
-            </div>
-          </div>
-        </div>
+      <ProtectedRoute requireAuth mustBeOnboarded={false}>
+        <UnifiedLoader
+          title="Preparing your onboarding"
+          message="Loading questions and categories..."
+          subMessage="Please wait while we personalize your experience"
+        />
       </ProtectedRoute>
-
-    );
+    )
   }
 
   // Show error state
   if (error) {
     return (
 
-      <ProtectedRoute requireAuth={true} requireOnboarding={true}>
+  <ProtectedRoute requireAuth mustBeOnboarded={false}>
 
         <div className="min-h-screen bg-[#0e2439] flex items-center justify-center">
           <div className="text-center space-y-6 max-w-md mx-auto p-6">
@@ -210,24 +231,46 @@ export default function OnboardingPage() {
 
 
   const handleNext = async () => {
-    const step = onboardingSteps[currentStep]
-    
+    const step = onboardingSteps[currentStep];
+    if (!isValid) return;
 
-    
-    // Check if current step is valid
-    if (!isValid) {
-      return
+    // If we only have the two initial steps (no questions yet) and we're on step 0 (category), go to CV step.
+    if (onboardingSteps.length === 2) {
+      if (currentStep === 0) {
+        setIsAnimating(true);
+        setTimeout(() => {
+          setCurrentStep(1);
+          setIsAnimating(false);
+        }, 150);
+      } else if (currentStep === 1) {
+        // At CV step but questions not appended yet (maybe user clicked Next before upload finished)
+        if (isProcessingCV) return; // Wait until processing completes
+        // If CV not uploaded, block (already invalid). If uploaded & processing done but still no questions, prompt user
+        if (uploadedFiles[step.id]?.length && onboardingSteps.length === 2) {
+          // Force re-process if somehow not triggered
+          await processCVAndPreFill(uploadedFiles[step.id]);
+        }
+      }
+      return;
     }
 
-    if (currentStep < onboardingSteps.length - 2) {
-      setIsAnimating(true)
+    // After questions added, determine index of completion step
+    const completionIndex = onboardingSteps.findIndex(s => s.type === 'completion');
+    const lastQuestionIndex = completionIndex === -1 ? onboardingSteps.length - 1 : completionIndex - 1;
+
+    if (currentStep < lastQuestionIndex) {
+      setIsAnimating(true);
       setTimeout(() => {
-        setCurrentStep(currentStep + 1)
-        setIsAnimating(false)
-      }, 150)
-    } else {
-      // Last regular question - save data and redirect to preview
-      await handleGoToPreview()
+        setCurrentStep(currentStep + 1);
+        setIsAnimating(false);
+      }, 150);
+    } else if (currentStep === lastQuestionIndex) {
+      // Move to completion step
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentStep(currentStep + 1);
+        setIsAnimating(false);
+      }, 150);
     }
 
 //         console.log("HandleNext called:", {
@@ -260,18 +303,26 @@ export default function OnboardingPage() {
   }
 
   const handleSkip = () => {
-    const step = onboardingSteps[currentStep]
-    if (!step || step.type === 'completion') return
-    setSkippedQuestions(prev => new Set(prev).add(step.id))
-    if (currentStep < onboardingSteps.length - 2) {
-      setIsAnimating(true)
+    // Skip only after dynamic questions appear (index >=2 and not completion)
+    if (onboardingSteps.length <= 2) return;
+    const step = onboardingSteps[currentStep];
+    if (!step || step.type === 'completion' || currentStep < 2) return;
+    setSkippedQuestions(prev => new Set(prev).add(step.id));
+    const completionIndex = onboardingSteps.findIndex(s => s.type === 'completion');
+    const lastQuestionIndex = completionIndex === -1 ? onboardingSteps.length - 1 : completionIndex - 1;
+    if (currentStep < lastQuestionIndex) {
+      setIsAnimating(true);
       setTimeout(() => {
-        setCurrentStep(currentStep + 1)
-        setIsAnimating(false)
-      }, 120)
-    } else {
-      // If skipping last regular question go to preview
-      handleGoToPreview()
+        setCurrentStep(currentStep + 1);
+        setIsAnimating(false);
+      }, 120);
+    } else if (currentStep === lastQuestionIndex) {
+      // Move to completion step
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentStep(currentStep + 1);
+        setIsAnimating(false);
+      }, 120);
     }
   }
 
@@ -384,65 +435,7 @@ export default function OnboardingPage() {
     return responses
   }
 
-  const handleSaveResponses = async () => {
-    try {
-      setIsSaving(true)
-      setSaveError(null)
-      
-      const token = getToken()
-      if (!token) {
-        throw new Error('No authentication token found')
-      }
-      
-      // Prepare responses
-      const responses = prepareUserResponses()
-      
-      // Collect all files
-      const allFiles: File[] = []
-      Object.values(uploadedFiles).forEach(files => {
-        allFiles.push(...files)
-      })
-      
-      console.log('Saving responses:', {
-        responsesCount: responses.length,
-        filesCount: allFiles.length,
-        responses: responses.map(r => ({
-          questionId: r.questionId,
-          hasAnswer: !!(r.answerText || r.answerChoice || r.answerLink || r.files)
-        }))
-      })
-      
-      // Save to backend
-      const result = await saveUserResponses(responses, allFiles, token)
-      
-      if (result.success) {
-        // If backend now returns recommendedCourses with final submission, persist it
-        const rc = (result as any)?.data?.recommendedCourses
-        if (rc && Array.isArray(rc)) {
-          try {
-            localStorage.setItem('recommendedCourses', JSON.stringify(rc.slice(0,4)))
-          } catch (e) {
-            console.warn('Failed to persist recommended courses after submission', e)
-          }
-        }
-        // Update user progress
-        updateUser({ 
-          ...user, 
-          hasCompletedOnboarding: true
-        })
-        // Redirect directly to dashboard to show roadmap cards
-        router.push('/dashboard')
-      } else {
-        throw new Error(result.message || 'Failed to save responses')
-      }
-      
-    } catch (error) {
-      console.error('Error saving responses:', error)
-      setSaveError(error instanceof Error ? error.message : 'Failed to save responses')
-    } finally {
-      setIsSaving(false)
-    }
-  }
+  // Final save now handled in preview page after preference step.
 
   const handlePrevious = () => {
     if (currentStep > 0) {
@@ -470,6 +463,11 @@ export default function OnboardingPage() {
     
 
     
+    if (step.id === 'select-category') {
+      setSelectedCategory(option.toLowerCase())
+      handleInputChange(option)
+      return
+    }
     if (step.type === "multiselect") {
       const currentValues = (formData[step.id] as string[]) || []
       const newValues = currentValues.includes(option)
@@ -501,68 +499,66 @@ export default function OnboardingPage() {
       ...prev,
       [step.id]: fileArray
     }))
-
-
-    // Check if this is a CV upload step (should be step 1 after user type question)
-    // Only process main CV upload, not optional supporting documents
-    const isCVUpload = currentStep === 1 && step.type === "file" && 
-                      (step.title.toLowerCase().includes('most recent cv') ||
-                       step.title.toLowerCase().includes('please upload your most recent') ||
-                       (step.title.toLowerCase().includes('cv') && step.title.toLowerCase().includes('pdf') && !step.title.toLowerCase().includes('optional')) ||
-                       (step.title.toLowerCase().includes('resume') && step.title.toLowerCase().includes('pdf') && !step.title.toLowerCase().includes('optional')))
-
-
+    // Trigger pre-fill only for the dedicated CV upload step
+    const isCVUpload = step.id === 'upload-cv';
     if (isCVUpload && fileArray.length > 0) {
-      await processCVAndPreFill(fileArray)
+      await processCVAndPreFill(fileArray);
     }
   }
 
   const processCVAndPreFill = async (cvFiles: File[]) => {
     try {
-      setIsProcessingCV(true)
-      setCvProcessingError(null)
-
-      
-  const authToken = getToken();
-  if (!authToken) throw new Error('Missing auth token for CV prefill');
-  const result = await preFillQuestions(cvFiles, authToken)
-      
-      if (result.success) {
-        setPreFillData(result)
-        // Persist recommended courses for dashboard roadmap
-        const rc = (result as any)?.data?.recommendedCourses
-        if (rc && Array.isArray(rc)) {
-          try {
-            localStorage.setItem('recommendedCourses', JSON.stringify(rc.slice(0,4)))
-          } catch (e) {
-            console.warn('Failed to persist recommended courses', e)
-          }
-        }
-        
-        // Apply pre-filled answers to form data
-        if (result.data?.preFilledAnswers) {
-          
-          const preFilledFormData = applyPreFilledAnswers(
-            result.data.preFilledAnswers,
-            onboardingSteps
-          )
-          
-          
-          setFormData(prev => {
-            const updated = { ...prev, ...preFilledFormData };
-            return updated;
-          })
-        }
-        
-      } else {
-        throw new Error(result.message || 'Failed to process CV')
+      setIsProcessingCV(true);
+      setCvProcessingError(null);
+      const authToken = getToken();
+      if (!authToken) throw new Error('Missing auth token for CV prefill');
+      const result = await preFillQuestions(cvFiles, authToken, selectedCategory || undefined);
+      if (!result.success) throw new Error(result.message || 'Failed to process CV');
+      setPreFillData(result);
+      // Build question steps from returned questions
+      const qList = (result as any)?.data?.questions || [];
+      const questionSteps: OnboardingStep[] = qList.map((q: any, idx: number) => {
+        const isYesNo = q.type === 'yes/no';
+        return {
+          id: q._id,
+          title: q.text,
+          subtitle: '',
+          icon: Brain,
+          type: q.type === 'upload' ? 'file' : (q.type === 'multiple-choice' ? 'select' : (isYesNo ? 'yesno' : (q.type === 'link' ? 'link' : 'text'))),
+          options: isYesNo ? ['Yes','No'] : (Array.isArray(q.options) && q.options.length ? q.options : undefined),
+          required: !q.optional,
+          fileTypes: q.type === 'upload' ? ['.pdf', '.doc', '.docx'] : undefined,
+          maxFiles: q.type === 'upload' ? 1 : undefined,
+          stepNumber: idx + 2,
+          stepName: 'Question',
+          category: 'student'
+        } as OnboardingStep;
+      });
+      const completionStep: OnboardingStep = {
+        id: 'completion',
+             title: "Ready to Review",
+             subtitle: "We have prepared your answers. You'll review everything next before submitting.",
+        icon: Brain,
+        type: 'completion',
+        stepNumber: 999,
+        stepName: 'Completion',
+        category: 'student'
+      };
+      setOnboardingSteps(prev => {
+        const base = prev.filter(s => ['select-category','upload-cv'].includes(s.id));
+        return [...base, ...questionSteps, completionStep];
+      });
+      // Advance to first dynamic question automatically
+      setTimeout(() => setCurrentStep(2), 200);
+      if (result.data?.preFilledAnswers) {
+        const preFilledFormData = applyPreFilledAnswers(result.data.preFilledAnswers, questionSteps);
+        setFormData(prev => ({ ...prev, ...preFilledFormData }));
       }
     } catch (error) {
-      console.error('Error processing CV:', error)
-      setCvProcessingError(error instanceof Error ? error.message : 'Failed to process CV')
+      console.error('Error processing CV:', error);
+      setCvProcessingError(error instanceof Error ? error.message : 'Failed to process CV');
     } finally {
-      setIsProcessingCV(false)
-
+      setIsProcessingCV(false);
     }
   }
 
@@ -629,7 +625,7 @@ export default function OnboardingPage() {
 
 
   return (
-    <ProtectedRoute requireAuth={true} requireOnboarding={true}>
+  <ProtectedRoute requireAuth mustBeOnboarded={false}>
 
       <div className="min-h-screen bg-[#0e2439] flex flex-col relative overflow-hidden">
         {/* Animated background particles - reduced on mobile for performance */}
@@ -645,20 +641,29 @@ export default function OnboardingPage() {
           )}
         </div>
 
-        {/* Progress bar */}
-        <div className="sticky top-0 z-10 p-4 sm:p-6 glass-card border-b border-cyan-400/20 backdrop-blur-xl bg-[#0e2439]/80">
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs sm:text-sm text-cyan-300">
-
-                Step {currentStep + 1} of {totalSteps}
-
-              </span>
-              <span className="text-xs sm:text-sm text-cyan-300">{Math.round(progress)}% complete</span>
+        {/* Progress bar + logout */}
+        <div className="sticky top-0 z-10 p-3 sm:p-4 lg:p-6 glass-card border-b border-cyan-400/20 backdrop-blur-xl bg-[#0e2439]/80">
+          <div className="max-w-5xl mx-auto flex flex-col gap-2 sm:gap-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <span className="text-xs sm:text-sm text-cyan-300 font-medium">
+                  Step {currentStep + 1} of {totalSteps}
+                </span>
+                <span className="hidden md:inline text-xs sm:text-sm text-cyan-300">{Math.round(progress)}% complete</span>
+              </div>
+              <button
+                onClick={logout}
+                className="text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-cyan-400/40 text-cyan-200 hover:text-white hover:border-cyan-300 hover:bg-cyan-400/10 transition-colors shrink-0"
+              >
+                Logout
+              </button>
             </div>
-            <Progress value={progress} className="h-2 sm:h-2 bg-[#0e2439]/50">
-              <div 
-                className="h-2 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out rounded-full"
+            <div className="flex items-center gap-3 md:hidden">
+              <span className="text-xs text-cyan-300">{Math.round(progress)}% complete</span>
+            </div>
+            <Progress value={progress} className="h-1.5 sm:h-2 bg-[#0e2439]/50">
+              <div
+                className="h-1.5 sm:h-2 bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500 ease-out rounded-full"
                 style={{ width: `${progress}%` }}
               />
             </Progress>
@@ -666,8 +671,20 @@ export default function OnboardingPage() {
         </div>
 
         {/* Main content */}
-        <div className="flex-1 flex items-center justify-center p-4 sm:p-6">
-          <div className="w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-2xl">
+        <div className="flex-1 flex items-center justify-center p-3 sm:p-4 lg:p-6">
+          {/* Full-screen analyzing overlay while CV processing (after upload, step 1) */}
+          {isProcessingCV && currentStep === 1 && (
+            <UnifiedLoader
+              title="Analyzing your CV"
+              message="Extracting experience and generating personalized questions..."
+              subMessage="This usually takes less than a minute"
+              overlay={false}
+              compact
+              showProgressBar
+              progressPercent={35}
+            />
+          )}
+          <div className={`w-full ${currentStepData?.type === 'file' ? 'max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-3xl' : 'max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl'}`}>
             <div
               className={`transition-all duration-500 ease-out ${
                 isAnimating ? "opacity-0 transform translate-y-8" : "opacity-100 transform translate-y-0"
@@ -691,18 +708,18 @@ export default function OnboardingPage() {
                   </div>
 
                   {/* Completion content */}
-                  <div className="text-center space-y-6 sm:space-y-8">
+                  <div className="text-center space-y-4 sm:space-y-6 lg:space-y-8">
                     {/* Glowing Circle with Text */}
                     <div className="relative">
-                      <div className="w-60 h-60 sm:w-80 sm:h-80 mx-auto relative">
+                      <div className="w-48 h-48 sm:w-60 sm:h-60 lg:w-80 lg:h-80 mx-auto relative">
                         {/* Glowing Outline Ring */}
                         <div className="absolute inset-0 rounded-full border-2 border-cyan-400 shadow-lg shadow-cyan-400/50 animate-pulse"></div>
                         
                         {/* Text */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center text-white px-4">
-                            <div className="text-lg sm:text-xl font-semibold mb-2">Ready to</div>
-                            <div className="text-lg sm:text-xl font-semibold">Review & Submit</div>
+                          <div className="text-center text-white px-2 sm:px-4">
+                            <div className="text-base sm:text-lg lg:text-xl font-semibold mb-1 sm:mb-2">Ready to</div>
+                            <div className="text-base sm:text-lg lg:text-xl font-semibold">Review & Submit</div>
                           </div>
                         </div>
                       </div>
@@ -710,9 +727,9 @@ export default function OnboardingPage() {
                     
                     {/* Auto-redirect to preview */}
                     <div className="text-center">
-                      <p className="text-cyan-300/80 mb-4">Redirecting to preview...</p>
+                      <p className="text-cyan-300/80 mb-3 sm:mb-4 text-sm sm:text-base">Redirecting to preview...</p>
                       <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-cyan-400"></div>
                       </div>
                     </div>
                   </div>
@@ -720,22 +737,22 @@ export default function OnboardingPage() {
               ) : (
                 // Other steps with card wrapper
                 <GlassCard className="neuro border-cyan-400/20 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl bg-[#0e2439]/80">
-                  <GlassCardContent className="p-4 sm:p-6 lg:p-8">
+                  <GlassCardContent className="p-3 sm:p-4 lg:p-6 xl:p-8">
                     {/* Step content */}
-                    <div className="space-y-4 sm:space-y-6">
+                    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
                       {/* Question */}
                       <div className="text-center">
-                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-cyan-100 text-balance mb-3 sm:mb-4 tracking-wide px-2">
+                        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-cyan-100 text-balance mb-2 sm:mb-3 lg:mb-4 tracking-wide px-1 sm:px-2">
                           {currentStepData.title}
                         </h1>
                         {currentStepData.subtitle && (
-                          <p className="text-sm sm:text-base lg:text-lg text-cyan-300/80 text-pretty max-w-lg mx-auto px-2">
+                          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-cyan-300/80 text-pretty max-w-lg mx-auto px-1 sm:px-2">
                             {currentStepData.subtitle}
                           </p>
                         )}
 
                         {!currentStepData.required && (
-                          <p className="text-xs sm:text-sm text-cyan-400/70 mt-2 italic">
+                          <p className="text-xs sm:text-sm text-cyan-400/70 mt-1 sm:mt-2 italic">
                             This question is optional - you can skip it and proceed
                           </p>
                         )}
@@ -754,7 +771,7 @@ export default function OnboardingPage() {
                               value={(currentValue as string) || ""}
                               onChange={(e) => handleInputChange(e.target.value)}
                               onKeyPress={handleKeyPress}
-                              className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg h-12 sm:h-14 text-left"
+                              className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg h-10 sm:h-12 lg:h-14 text-left"
                             />
                           )}
                           {/* Yes/No default options if missing */}
@@ -766,7 +783,7 @@ export default function OnboardingPage() {
                                   <button
                                     key={option}
                                     onClick={() => handleSelectOption(option)}
-                                    className={`w-full glass-card p-3 sm:p-4 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
+                                    className={`w-full glass-card p-2 sm:p-3 lg:p-4 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
                                       isSelected 
                                         ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
                                         : "border-cyan-400/30 hover:border-cyan-400/50"
@@ -775,8 +792,8 @@ export default function OnboardingPage() {
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm sm:text-base lg:text-lg text-cyan-100 font-medium pr-2">{option}</span>
                                       {isSelected && (
-                                        <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-cyan-400 flex items-center justify-center flex-shrink-0">
-                                          <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                                        <div className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 rounded-full bg-cyan-400 flex items-center justify-center flex-shrink-0">
+                                          <CheckCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-4 lg:w-4 text-white" />
                                         </div>
                                       )}
                                     </div>
@@ -806,7 +823,7 @@ export default function OnboardingPage() {
                               <button
                                 key={option}
                                 onClick={() => handleSelectOption(option)}
-                                className={`w-full glass-card p-3 sm:p-4 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
+                                className={`w-full glass-card p-2 sm:p-3 lg:p-4 text-left transition-all duration-300 hover:bg-cyan-400/5 border rounded-xl bg-[#0e2439]/50 ${
                                   isSelected 
                                     ? "border-cyan-400 bg-cyan-400/10 shadow-lg shadow-cyan-400/20" 
                                     : "border-cyan-400/30 hover:border-cyan-400/50"
@@ -815,8 +832,8 @@ export default function OnboardingPage() {
                                 <div className="flex items-center justify-between">
                                   <span className="text-sm sm:text-base lg:text-lg text-cyan-100 font-medium pr-2">{option}</span>
                                   {isSelected && (
-                                    <div className="h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-cyan-400 flex items-center justify-center flex-shrink-0">
-                                      <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                                    <div className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 rounded-full bg-cyan-400 flex items-center justify-center flex-shrink-0">
+                                      <CheckCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 lg:h-4 lg:w-4 text-white" />
                                     </div>
                                   )}
                                 </div>
@@ -834,9 +851,23 @@ export default function OnboardingPage() {
                             value={(currentValue as string) || ""}
                             onChange={(e) => handleInputChange(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg h-12 sm:h-14 text-left"
+                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg h-10 sm:h-12 lg:h-14 text-left"
                             autoFocus
                           />
+                        </div>
+                      )}
+
+                      {currentStepData.type === 'link' && (
+                        <div>
+                          <Input
+                            type="url"
+                            placeholder={currentStepData.placeholder || 'https://example.com/your-profile'}
+                            value={(currentValue as string) || ''}
+                            onChange={(e) => handleInputChange(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg h-10 sm:h-12 lg:h-14 text-left"
+                          />
+                          <p className="mt-1 sm:mt-2 text-xs text-cyan-400/60">Paste a full URL including https://</p>
                         </div>
                       )}
 
@@ -846,19 +877,19 @@ export default function OnboardingPage() {
                             placeholder={currentStepData.placeholder}
                             value={(currentValue as string) || ""}
                             onChange={(e) => handleInputChange(e.target.value)}
-                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg min-h-24 sm:min-h-32 resize-none text-left"
+                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg min-h-20 sm:min-h-24 lg:min-h-32 resize-none text-left"
                             autoFocus
                           />
                         </div>
                       )}
 
                       {currentStepData.type === "checkbox" && (
-                        <div className="flex items-center space-x-3 justify-center">
+                        <div className="flex items-center space-x-2 sm:space-x-3 justify-center">
                           <Checkbox
                             id="permission"
                             checked={currentValue as boolean || false}
                             onCheckedChange={(checked) => handleInputChange(checked as boolean)}
-                            className="border-cyan-400/30 data-[state=checked]:bg-cyan-400 data-[state=checked]:border-cyan-400 h-5 w-5 sm:h-6 sm:w-6"
+                            className="border-cyan-400/30 data-[state=checked]:bg-cyan-400 data-[state=checked]:border-cyan-400 h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6"
                           />
                           <Label htmlFor="permission" className="text-cyan-100 text-sm sm:text-base lg:text-lg">
                             Yes, I give permission
@@ -871,12 +902,12 @@ export default function OnboardingPage() {
 
                           {/* CV Processing Status */}
                           {isProcessingCV && (
-                            <div className="mb-4 p-4 bg-purple-500/10 border border-purple-400/30 rounded-lg">
-                              <div className="flex items-center gap-3">
-                                <Loader2 className="h-5 w-5 text-purple-400 animate-spin" />
-                                <div>
-                                  <p className="text-purple-100 font-medium">Processing CV with AI...</p>
-                                  <p className="text-purple-300/80 text-sm">Extracting data and generating suggestions</p>
+                            <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-purple-500/10 border border-purple-400/30 rounded-lg">
+                              <div className="flex items-center gap-2 sm:gap-3">
+                                <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400 animate-spin flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-purple-100 font-medium text-sm sm:text-base">Processing CV with AI...</p>
+                                  <p className="text-purple-300/80 text-xs sm:text-sm">Extracting data and generating suggestions</p>
                                 </div>
                               </div>
                             </div>
@@ -884,23 +915,23 @@ export default function OnboardingPage() {
 
                           {/* CV Processing Error */}
                           {cvProcessingError && (
-                            <div className="mb-4 p-4 bg-red-500/10 border border-red-400/30 rounded-lg">
+                            <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-500/10 border border-red-400/30 rounded-lg">
                               <div className="flex items-center gap-2 text-red-400">
-                                <X className="h-5 w-5" />
-                                <span className="font-medium">CV Processing Failed</span>
+                                <X className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                                <span className="font-medium text-sm sm:text-base">CV Processing Failed</span>
                               </div>
-                              <p className="text-red-300 mt-2 text-sm">{cvProcessingError}</p>
+                              <p className="text-red-300 mt-1 sm:mt-2 text-xs sm:text-sm">{cvProcessingError}</p>
                             </div>
                           )}
 
                           {/* CV Processing Success */}
                           {preFillData && currentStep === 1 && (
-                            <div className="mb-4 p-4 bg-green-500/10 border border-green-400/30 rounded-lg">
+                            <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-green-500/10 border border-green-400/30 rounded-lg">
                               <div className="flex items-center gap-2 text-green-400">
-                                <CheckCircle className="h-5 w-5" />
-                                <span className="font-medium">CV Processed Successfully!</span>
+                                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                                <span className="font-medium text-sm sm:text-base">CV Processed Successfully!</span>
                               </div>
-                              <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
+                              <div className="mt-2 grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
                                 <div>
                                   <p className="text-green-300/80">Auto-filled Questions</p>
                                   <p className="text-green-100 font-medium">{preFillData.metadata?.autoFillCount || 0}</p>
@@ -928,7 +959,7 @@ export default function OnboardingPage() {
                               onDragLeave={(e) => {
                                 e.preventDefault()
                               }}
-                              className="relative border-2 border-solid rounded-xl p-6 sm:p-8 lg:p-12 text-center transition-all duration-300 cursor-pointer bg-[#0e2439]/50 backdrop-blur-sm border-cyan-400 shadow-lg shadow-cyan-400/30 hover:border-cyan-400/50 hover:shadow-cyan-400/40"
+                              className="relative border-2 border-solid rounded-xl p-6 sm:p-8 lg:p-10 xl:p-12 text-center transition-all duration-300 cursor-pointer bg-[#0e2439]/50 backdrop-blur-sm border-cyan-400 shadow-lg shadow-cyan-400/30 hover:border-cyan-400/50 hover:shadow-cyan-400/40"
                             >
                               <input
                                 type="file"
@@ -939,22 +970,22 @@ export default function OnboardingPage() {
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 disabled={isProcessingCV}
                               />
-                              <div className="space-y-4 sm:space-y-6">
-                                <div className="mx-auto flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center">
+                              <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+                                <div className="mx-auto flex h-12 w-12 sm:h-16 sm:w-16 lg:h-20 lg:w-20 items-center justify-center">
                                   {isProcessingCV ? (
-                                    <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 text-purple-400 animate-spin" />
+                                    <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-purple-400 animate-spin" />
                                   ) : (
-                                    <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                                    <Upload className="h-6 w-6 sm:h-8 sm:w-8 lg:h-10 lg:w-10 text-white" />
                                   )}
                                 </div>
                                 <div>
-                                  <p className="text-lg sm:text-xl font-medium text-white mb-2">
+                                  <p className="text-lg sm:text-xl lg:text-2xl font-medium text-white mb-2 sm:mb-3">
                                     {isProcessingCV ? 'Processing your CV...' : 'Drag and drop your file here'}
                                   </p>
-                                  <p className="text-sm sm:text-base text-white">
+                                  <p className="text-sm sm:text-base lg:text-lg text-white">
                                     {isProcessingCV ? 'Please wait while we analyze your document' : 'or click to browse'}
                                   </p>
-                                  <p className="text-xs sm:text-sm text-cyan-300/80 mt-2">
+                                  <p className="text-xs sm:text-sm lg:text-base text-cyan-300/80 mt-2 sm:mt-3">
                                     {currentStepData.fileTypes?.join(", ")} files accepted
 
                                   </p>
@@ -963,24 +994,24 @@ export default function OnboardingPage() {
                             </div>
 
                           ) : (
-                            <div className="space-y-4 sm:space-y-6">
+                            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
                               {uploadedFiles[currentStepData.id].map((file, index) => (
 
-                                <div key={index} className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 glass-card rounded-xl border border-cyan-400/20 bg-[#0e2439]/50 backdrop-blur-sm">
-                                  <div className="flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 flex-shrink-0">
-                                    <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400" />
+                                <div key={index} className="flex items-center gap-3 sm:gap-4 lg:gap-6 p-4 sm:p-5 lg:p-6 glass-card rounded-xl border border-cyan-400/20 bg-[#0e2439]/50 backdrop-blur-sm">
+                                  <div className="flex h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-cyan-400/30 flex-shrink-0">
+                                    <Upload className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 xl:h-8 xl:w-8 text-cyan-400" />
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm sm:text-base lg:text-lg font-medium text-cyan-100 truncate">{file.name}</p>
-                                    <p className="text-xs sm:text-sm text-cyan-300/80">{formatFileSize(file.size)}</p>
+                                    <p className="text-sm sm:text-base md:text-lg lg:text-xl font-medium text-cyan-100 truncate">{file.name}</p>
+                                    <p className="text-xs sm:text-sm lg:text-base text-cyan-300/80">{formatFileSize(file.size)}</p>
                                   </div>
-                                  <div className="flex items-center gap-2 flex-shrink-0">
-                                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
+                                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                                    <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 text-green-400" />
                                     <button 
                                       onClick={() => removeFile(currentStepData.id, index)} 
-                                      className="p-2 hover:bg-red-400/10 rounded-full transition-colors duration-300"
+                                      className="p-2 sm:p-2.5 hover:bg-red-400/10 rounded-full transition-colors duration-300"
                                     >
-                                      <X className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" />
+                                      <X className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-red-400" />
                                     </button>
                                   </div>
                                 </div>
@@ -1016,16 +1047,28 @@ export default function OnboardingPage() {
                                     };
                                     input.click();
                                   }}
-                                className="w-full p-3 sm:p-4 border-2 border-dashed border-cyan-400/30 rounded-xl text-center transition-all duration-300 hover:border-cyan-400/50 hover:bg-cyan-400/5"
+                                className="w-full p-2 sm:p-3 lg:p-4 border-2 border-dashed border-cyan-400/30 rounded-xl text-center transition-all duration-300 hover:border-cyan-400/50 hover:bg-cyan-400/5"
                               >
-                                <div className="space-y-2">
-                                  <Upload className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400 mx-auto" />
-                                  <p className="text-sm sm:text-base text-cyan-100">Add more files</p>
+                                <div className="space-y-1 sm:space-y-2">
+                                  <Upload className="h-4 w-4 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-cyan-400 mx-auto" />
+                                  <p className="text-xs sm:text-sm lg:text-base text-cyan-100">Add more files</p>
                                 </div>
                               </button>
                               )}
                             </div>
                           )}
+                        </div>
+                      )}
+                      {/* Generic fallback: if type is unrecognized render a text input */}
+                      {!['text','textarea','checkbox','file','select','multiselect','yesno','link','completion'].includes(currentStepData.type) && (
+                        <div>
+                          <Input
+                            type="text"
+                            placeholder="Enter your answer..."
+                            value={(currentValue as string) || ''}
+                            onChange={(e)=>handleInputChange(e.target.value)}
+                            className="glass-card border-cyan-400/30 focus:border-cyan-400/60 bg-[#0e2439]/50 text-cyan-100 placeholder-cyan-300/50 transition-all duration-300 focus:ring-2 focus:ring-cyan-400/20 text-sm sm:text-base lg:text-lg h-12 sm:h-14 text-left"
+                          />
                         </div>
                       )}
                     </div>
@@ -1055,37 +1098,41 @@ export default function OnboardingPage() {
 
             {/* Navigation */}
 
-            {currentStepData?.type !== "completion" && (
+            {currentStepData?.type !== "completion" && !(isProcessingCV && currentStep === 1) && (
 
-              <div className="flex items-center justify-between mt-6 sm:mt-8 px-2 gap-2">
+              <div className="flex items-center justify-between mt-4 sm:mt-6 lg:mt-8 px-1 sm:px-2 gap-2 sm:gap-3">
                 <button
                   onClick={handlePrevious}
                   disabled={currentStep === 0}
-                  className="flex items-center gap-2 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-400/10 transition-all duration-300 px-3 sm:px-4 py-2 rounded-md relative z-50 text-sm sm:text-base"
+                  className="flex items-center gap-1 sm:gap-2 text-cyan-300 hover:text-cyan-100 hover:bg-cyan-400/10 transition-all duration-300 px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 rounded-md relative z-50 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ position: 'relative', zIndex: 50 }}
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Previous</span>
                   <span className="sm:hidden">Back</span>
                 </button>
-                <div className="flex items-center gap-2 ml-auto">
-                  <button
-                    type="button"
-                    onClick={handleSkip}
-                    className="text-xs sm:text-sm px-3 py-2 rounded-md text-cyan-200 hover:text-white hover:bg-cyan-400/10 transition-colors"
-                  >
-                    Skip
-                  </button>
+                <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+                  {currentStep >= 2 && (
+                    <button
+                      type="button"
+                      onClick={handleSkip}
+                      className="text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-md text-cyan-200 hover:text-white hover:bg-cyan-400/10 transition-colors relative"
+                      style={{ position: 'relative', zIndex: 50 }}
+                    >
+                      Skip
+                    </button>
+                  )}
                 <button 
                   onClick={handleNext} 
                   disabled={!isValid || isAnimating || isSaving} 
-                  className="flex items-center gap-2 h-10 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold tracking-wide shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none rounded-md relative z-50 text-sm sm:text-base"
+                  className="flex items-center gap-1 sm:gap-2 h-8 sm:h-10 lg:h-12 px-3 sm:px-4 lg:px-6 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold tracking-wide shadow-lg shadow-cyan-500/25 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:transform-none rounded-md relative z-50 text-xs sm:text-sm lg:text-base"
                   style={{ position: 'relative', zIndex: 50 }}
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Saving...</span>
+                      <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                      <span className="hidden sm:inline">Saving...</span>
+                      <span className="sm:hidden">Saving</span>
                     </>
                   ) : (
                     <>
@@ -1099,7 +1146,7 @@ export default function OnboardingPage() {
                          (currentStep - 1 === onboardingSteps.length - 2 ? "Review" : "Next")}
 
                   </span>
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                     </>
                   )}
                 </button>

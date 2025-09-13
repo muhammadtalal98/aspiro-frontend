@@ -32,17 +32,22 @@ import {
   deleteQuestion,
   UpdateQuestionRequest
 } from "@/lib/questions-api"
+import { listCategories, Category } from "@/lib/admin-categories-api"
 
-type QuestionCategory = "student" | "professional"
+type QuestionCategory = string // Allow any category from API
 type QuestionType = "text" | "yes/no" | "multiple-choice" | "upload" | "link"
 
 export default function QuestionsManagement() {
-  const { getToken } = useAuth()
+  const { getToken, getAuthHeaders } = useAuth()
   const { toast } = useToast()
 
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedType, setSelectedType] = useState<string>("all")
+
+  // Categories data from API
+  const [categories, setCategories] = useState<Category[]>([])
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false)
 
   // Questions data from API
   const [questions, setQuestions] = useState<Question[]>([])
@@ -67,7 +72,7 @@ export default function QuestionsManagement() {
       stepNumber: 1,
       stepName: "Academic Background"
     },
-    category: "student",
+    category: "student", // Will be updated when categories load
     optional: false,
     status: "active",
     documents: {
@@ -78,10 +83,22 @@ export default function QuestionsManagement() {
   
   const [isSaving, setIsSaving] = useState(false)
 
-  // Load questions on component mount
+  // Load questions and categories on component mount
   useEffect(() => {
     loadQuestions()
+    loadCategories()
   }, [])
+
+  // Update form default category when categories are loaded
+  useEffect(() => {
+    if (categories.length > 0 && singleQuestionForm.category === "student") {
+      // Only update if still using default, don't override user selection
+      setSingleQuestionForm(prev => ({
+        ...prev,
+        category: categories[0].slug
+      }))
+    }
+  }, [categories, singleQuestionForm.category])
 
   const loadQuestions = async () => {
     try {
@@ -102,6 +119,28 @@ export default function QuestionsManagement() {
       })
     } finally {
       setIsFetching(false)
+    }
+  }
+
+  const loadCategories = async () => {
+    try {
+      setIsCategoriesLoading(true)
+      const authHeaders = getAuthHeaders() as Record<string, string>
+      const data = await listCategories({ status: 'active', limit: 100 }, authHeaders)
+      setCategories(data.categories)
+    } catch (error) {
+      console.error('Error loading categories:', error)
+      toast({ 
+        title: "Failed to load categories", 
+        description: error instanceof Error ? error.message : "Using default categories." 
+      })
+      // Fallback to default categories if API fails
+      setCategories([
+        { _id: 'student', name: 'Student', slug: 'student', status: 'active' as const, createdAt: '', updatedAt: '' },
+        { _id: 'professional', name: 'Professional', slug: 'professional', status: 'active' as const, createdAt: '', updatedAt: '' }
+      ])
+    } finally {
+      setIsCategoriesLoading(false)
     }
   }
 
@@ -148,7 +187,7 @@ export default function QuestionsManagement() {
     const term = searchTerm.trim().toLowerCase()
     return questions.filter((q) => {
       const matchesSearch = !term || q.text.toLowerCase().includes(term)
-      const matchesCategory = selectedCategory === "all" || q.category === (selectedCategory as QuestionCategory)
+      const matchesCategory = selectedCategory === "all" || q.category === selectedCategory
       const matchesType = selectedType === "all" || q.type === (selectedType as QuestionType)
       return matchesSearch && matchesCategory && matchesType
     })
@@ -264,6 +303,7 @@ export default function QuestionsManagement() {
   }
 
   const resetSingleQuestionForm = () => {
+    const defaultCategory = categories.length > 0 ? categories[0].slug : 'student'
     setSingleQuestionForm({
       text: "",
       type: "text",
@@ -272,7 +312,7 @@ export default function QuestionsManagement() {
         stepNumber: 1,
         stepName: "Academic Background"
       },
-      category: "student",
+      category: defaultCategory,
       optional: false,
       status: "active",
       documents: {
@@ -326,8 +366,15 @@ export default function QuestionsManagement() {
                     className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white min-w-[120px]"
                   >
                     <option value="all">All Categories</option>
-                    <option value="student">Student</option>
-                    <option value="professional">Professional</option>
+                    {isCategoriesLoading ? (
+                      <option disabled>Loading...</option>
+                    ) : (
+                      categories.map((category) => (
+                        <option key={category._id} value={category.slug}>
+                          {category.name}
+                        </option>
+                      ))
+                    )}
                   </select>
                   <select
                     value={selectedType}
@@ -483,12 +530,25 @@ export default function QuestionsManagement() {
                   <label className="text-sm text-white/80 block mb-1">Category *</label>
                   <select 
                     value={singleQuestionForm.category} 
-                    onChange={(e) => setSingleQuestionForm({ ...singleQuestionForm, category: e.target.value as QuestionCategory })} 
+                    onChange={(e) => setSingleQuestionForm({ ...singleQuestionForm, category: e.target.value })} 
                     className="w-full px-3 py-2 bg-[#0e2439]/50 border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white"
                   >
-                    <option value="student">Student</option>
-                    <option value="professional">Professional</option>
+                    {isCategoriesLoading ? (
+                      <option disabled>Loading categories...</option>
+                    ) : categories.length > 0 ? (
+                      categories.map((category) => (
+                        <option key={category._id} value={category.slug}>
+                          {category.name}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="student">Student</option>
+                        <option value="professional">Professional</option>
+                      </>
+                    )}
                   </select>
+                  {isCategoriesLoading && <p className="text-xs text-cyan-300/70 mt-1">Loading categories...</p>}
                 </div>
                 <div>
                   <label className="text-sm text-white/80 block mb-1">Type *</label>

@@ -4,7 +4,7 @@ import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function AdminOnly({ children }: { children: React.ReactNode }) {
   return (
-    <ProtectedRoute requireAuth={true} requireOnboarding={false} allowedRoles={["admin"]}>
+    <ProtectedRoute requireAuth mustBeOnboarded={false} allowedRoles={["admin"]}>
       {children}
     </ProtectedRoute>
   )
