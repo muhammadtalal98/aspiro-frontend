@@ -25,10 +25,16 @@ export async function apiRequest<T = any>(
     ...API_CONFIG.DEFAULT_HEADERS,
   }
 
-  // Add authorization header if token exists
-  const token = localStorage.getItem('token')
-  if (token) {
-    defaultHeaders['Authorization'] = `Bearer ${token}`
+  // Add authorization header if token exists (guard for SSR)
+  if (typeof window !== 'undefined') {
+    try {
+      const token = localStorage.getItem('token')
+      if (token) {
+        defaultHeaders['Authorization'] = `Bearer ${token}`
+      }
+    } catch {
+      // Ignore storage access errors
+    }
   }
 
   const config: RequestInit = {

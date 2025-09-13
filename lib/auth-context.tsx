@@ -38,9 +38,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = () => {
     setIsLoading(true)
-    const storedUser = localStorage.getItem("user")
-    const storedToken = localStorage.getItem("token")
-  const storedOnboarding = localStorage.getItem("onboardingData") || sessionStorage.getItem("onboardingData")
+    // Guard for SSR – no window/localStorage on server
+    if (typeof window === 'undefined') {
+      setIsLoading(false)
+      return
+    }
+    let storedUser: string | null = null
+    let storedToken: string | null = null
+    let storedOnboarding: string | null = null
+    try {
+      storedUser = localStorage.getItem("user")
+      storedToken = localStorage.getItem("token")
+      storedOnboarding = localStorage.getItem("onboardingData") || sessionStorage.getItem("onboardingData")
+    } catch {
+      // Ignore storage access issues (Safari privacy / disabled storage)
+    }
     
     if (storedUser && storedToken) {
       try {
@@ -62,8 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(userData)
       } catch (error) {
         console.error("Error parsing stored user data:", error)
-        localStorage.removeItem("user")
-        localStorage.removeItem("token")
+        try {
+          localStorage.removeItem("user")
+          localStorage.removeItem("token")
+        } catch {}
       }
     }
     setIsLoading(false)
@@ -98,17 +112,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.success) {
         // Try to preserve onboarding completion if backend doesn't send it
         let previousOnboarding = false
-        try {
-          const prev = localStorage.getItem("user")
-          if (prev) previousOnboarding = !!JSON.parse(prev)?.hasCompletedOnboarding
-        } catch {}
-        // Also consider presence of onboardingData as completion
-        try {
-          if (!previousOnboarding) {
-            const ob = localStorage.getItem("onboardingData")
-            if (ob) previousOnboarding = true
-          }
-        } catch {}
+        if (typeof window !== 'undefined') {
+          try {
+            const prev = localStorage.getItem("user")
+            if (prev) previousOnboarding = !!JSON.parse(prev)?.hasCompletedOnboarding
+          } catch {}
+          // Also consider presence of onboardingData as completion
+          try {
+            if (!previousOnboarding) {
+              const ob = localStorage.getItem("onboardingData")
+              if (ob) previousOnboarding = true
+            }
+          } catch {}
+        }
         const newUser: User = {
           _id: data.user._id,
           email: data.user.email,
@@ -120,8 +136,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         setUser(newUser)
-        localStorage.setItem("user", JSON.stringify(newUser))
-        localStorage.setItem("token", data.token)
+        if (typeof window !== 'undefined') {
+          try { localStorage.setItem("user", JSON.stringify(newUser)) } catch {}
+          try { localStorage.setItem("token", data.token) } catch {}
+        }
         
         return { success: true }
       } else {
@@ -176,16 +194,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     // Preserve onboardingData in session, clear the rest
     try {
-      const onboarding = localStorage.getItem("onboardingData")
-      if (onboarding) {
-        sessionStorage.setItem("onboardingData", onboarding)
-        localStorage.removeItem("onboardingData")
+      if (typeof window !== 'undefined') {
+        try {
+          const onboarding = localStorage.getItem("onboardingData")
+          if (onboarding) {
+            try { sessionStorage.setItem("onboardingData", onboarding) } catch {}
+            try { localStorage.removeItem("onboardingData") } catch {}
+          }
+        } catch {}
       }
     } catch {}
 
     setUser(null)
-    localStorage.removeItem("user")
-    localStorage.removeItem("token")
+    if (typeof window !== 'undefined') {
+      try { localStorage.removeItem("user") } catch {}
+      try { localStorage.removeItem("token") } catch {}
+    }
   // Requirement: keep onboarding only in session; we already removed from local above.
     router.push("/login")
   }
@@ -194,7 +218,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       const updatedUser = { ...user, ...updates }
       setUser(updatedUser)
-      localStorage.setItem("user", JSON.stringify(updatedUser))
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem("user", JSON.stringify(updatedUser)) } catch {}
+      }
     }
   }
 
@@ -202,20 +228,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       const resetUser = { ...user, hasCompletedOnboarding: false }
       setUser(resetUser)
-      localStorage.setItem("user", JSON.stringify(resetUser))
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem("user", JSON.stringify(resetUser)) } catch {}
+      }
     }
   }
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("token")
-    if (token) {
-      return { Authorization: `Bearer ${token}` }
-    }
+    if (typeof window === 'undefined') return {}
+    try {
+      const token = localStorage.getItem("token")
+      if (token) {
+        return { Authorization: `Bearer ${token}` }
+      }
+    } catch {}
     return {}
   }
 
   const getToken = () => {
-    return localStorage.getItem("token")
+    if (typeof window === 'undefined') return null
+    try { return localStorage.getItem("token") } catch { return null }
   }
 
   return (

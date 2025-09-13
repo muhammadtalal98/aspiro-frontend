@@ -8,14 +8,6 @@ export interface PreFillResponse {
   success: boolean;
   message: string;
   data?: {
-    category?: string;
-    questions?: Array<{
-      _id: string;
-      text: string;
-      type: string; // multiple-choice, text, yes/no, link, upload
-      options?: string[];
-      generatedOptions?: boolean;
-    }>;
     preFilledAnswers: Record<string, PreFillAnswer>;
     questionMappings: {
       autoFill: QuestionMapping[];
