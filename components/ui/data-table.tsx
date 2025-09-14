@@ -43,6 +43,7 @@ interface DataTableProps<TData, TValue> {
   onRefresh?: () => void
   filterComponent?: React.ReactNode
   toolbar?: React.ReactNode
+  onSearchChange?: (value: string) => void
   pagination?: {
     pageIndex: number
     pageSize: number
@@ -62,6 +63,7 @@ export function DataTable<TData, TValue>({
   onRefresh,
   filterComponent,
   toolbar,
+  onSearchChange,
   pagination,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -107,6 +109,7 @@ export function DataTable<TData, TValue>({
     if (searchKey) {
       table.getColumn(searchKey)?.setFilterValue(value)
     }
+    if (onSearchChange) onSearchChange(value)
   }
 
   const getPageNumbers = () => {
@@ -248,10 +251,7 @@ export function DataTable<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="text-white text-sm">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
                 </TableRow>

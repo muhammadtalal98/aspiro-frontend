@@ -672,18 +672,20 @@ export default function OnboardingPage() {
 
         {/* Main content */}
         <div className="flex-1 flex items-center justify-center p-3 sm:p-4 lg:p-6">
-          {/* Full-screen analyzing overlay while CV processing (after upload, step 1) */}
-          {isProcessingCV && currentStep === 1 && (
-            <UnifiedLoader
-              title="Analyzing your CV"
-              message="Extracting experience and generating personalized questions..."
-              subMessage="This usually takes less than a minute"
-              overlay={false}
-              compact
-              showProgressBar
-              progressPercent={35}
-            />
-          )}
+          {/* While CV is processing on step 1, show ONLY loader (responsive centered) */}
+          {isProcessingCV && currentStep === 1 ? (
+            <div className="w-full max-w-lg mx-auto">
+              <UnifiedLoader
+                title="Analyzing your CV"
+                message="Extracting experience and generating personalized questions..."
+                subMessage="This usually takes less than a minute"
+                overlay={false}
+                compact
+                showProgressBar
+                progressPercent={35}
+              />
+            </div>
+          ) : (
           <div className={`w-full ${currentStepData?.type === 'file' ? 'max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-3xl' : 'max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-2xl'}`}>
             <div
               className={`transition-all duration-500 ease-out ${
@@ -1096,9 +1098,8 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Navigation */}
-
-            {currentStepData?.type !== "completion" && !(isProcessingCV && currentStep === 1) && (
+            {/* Navigation (hidden during CV processing step) */}
+            {currentStepData?.type !== "completion" && (
 
               <div className="flex items-center justify-between mt-4 sm:mt-6 lg:mt-8 px-1 sm:px-2 gap-2 sm:gap-3">
                 <button
@@ -1154,6 +1155,7 @@ export default function OnboardingPage() {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 "use client"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { ColumnDef } from "@tanstack/react-table"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card"
 import { NeuroButton } from "@/components/ui/neuro-button"
 import { Input } from "@/components/ui/input"
@@ -9,14 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import {
-  Search,
-  Filter,
-  Eye,
-  Plus,
-  Pencil,
-  Trash2
-} from "lucide-react"
+import { Filter, Eye, Plus, Pencil, Trash2, ArrowUpDown } from "lucide-react"
 import AdminOnly from "../AdminOnly"
 import { AdminSidebar } from "@/components/admin-sidebar"
 import { useAuth } from "@/lib/auth-context"
@@ -25,13 +19,14 @@ import { useToast } from "@/hooks/use-toast"
 import { 
   Question, 
   AddQuestionRequest, 
-  AddQuestionsResponse, 
+  AddQuestionResponse, 
   fetchQuestions, 
   addQuestion,
   updateQuestion,
   deleteQuestion,
   UpdateQuestionRequest
 } from "@/lib/questions-api"
+import { DataTable } from "@/components/ui/data-table"
 import { listCategories, Category } from "@/lib/admin-categories-api"
 
 type QuestionCategory = string // Allow any category from API
@@ -41,9 +36,10 @@ export default function QuestionsManagement() {
   const { getToken, getAuthHeaders } = useAuth()
   const { toast } = useToast()
 
-  const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedType, setSelectedType] = useState<string>("all")
+  const [searchTerm, setSearchTerm] = useState("")
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null)
 
   // Categories data from API
   const [categories, setCategories] = useState<Category[]>([])
@@ -51,8 +47,16 @@ export default function QuestionsManagement() {
 
   // Questions data from API
   const [questions, setQuestions] = useState<Question[]>([])
-  const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Pagination (client-side for now until server endpoint supports it)
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+    pageCount: 1,
+    total: 0
+  })
 
   // Dialog state
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -60,7 +64,7 @@ export default function QuestionsManagement() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
-  const [editForm, setEditForm] = useState<UpdateQuestionRequest & { optionsText?: string }>({})
+  const [editForm, setEditForm] = useState<UpdateQuestionRequest & { optionsText?: string; stepNumber?: number; stepName?: string }>({})
   const [isMutating, setIsMutating] = useState(false)
 
   // Forms
@@ -102,6 +106,7 @@ export default function QuestionsManagement() {
 
   const loadQuestions = async () => {
     try {
+      if (isFetching) return
       setIsFetching(true)
       const token = getToken()
       if (!token) {
@@ -111,6 +116,11 @@ export default function QuestionsManagement() {
       
       const questionsData = await fetchQuestions(token)
       setQuestions(questionsData)
+      setPagination(prev => ({
+        ...prev,
+        total: questionsData.length,
+        pageCount: Math.max(1, Math.ceil(questionsData.length / prev.pageSize))
+      }))
     } catch (error) {
       console.error('Error loading questions:', error)
       toast({ 
@@ -119,6 +129,7 @@ export default function QuestionsManagement() {
       })
     } finally {
       setIsFetching(false)
+      setIsLoading(false)
     }
   }
 
@@ -184,14 +195,171 @@ export default function QuestionsManagement() {
   }
 
   const filteredQuestions = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase()
-    return questions.filter((q) => {
-      const matchesSearch = !term || q.text.toLowerCase().includes(term)
+    const base = questions.filter((q) => {
       const matchesCategory = selectedCategory === "all" || q.category === selectedCategory
       const matchesType = selectedType === "all" || q.type === (selectedType as QuestionType)
-      return matchesSearch && matchesCategory && matchesType
+      const matchesSearch = !searchTerm.trim() || q.text.toLowerCase().includes(searchTerm.toLowerCase())
+      return matchesCategory && matchesType && matchesSearch
     })
-  }, [questions, searchTerm, selectedCategory, selectedType])
+    // update pagination totals when filters/search change
+    const total = base.length
+    const pageCount = Math.max(1, Math.ceil(total / pagination.pageSize))
+    if (pagination.total !== total || pagination.pageCount !== pageCount) {
+      // adjust pageIndex if out of bounds
+      setPagination(prev => ({
+        ...prev,
+        total,
+        pageCount,
+        pageIndex: Math.min(prev.pageIndex, pageCount - 1)
+      }))
+    }
+    return base
+  }, [questions, selectedCategory, selectedType, searchTerm, pagination.pageSize, pagination.total, pagination.pageCount, pagination.pageIndex])
+
+  const pagedQuestions = useMemo(() => {
+    const start = pagination.pageIndex * pagination.pageSize
+    return filteredQuestions.slice(start, start + pagination.pageSize)
+  }, [filteredQuestions, pagination.pageIndex, pagination.pageSize])
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    setPagination(prev => ({ ...prev, pageIndex: 0 }))
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    searchDebounceRef.current = setTimeout(() => {}, 300) // purely client side for now
+  }
+
+  const columns: ColumnDef<Question>[] = [
+    {
+      accessorKey: 'text',
+      header: ({ column }) => (
+        <NeuroButton
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="h-auto p-0 hover:bg-transparent text-white font-medium"
+        >
+          Question <ArrowUpDown className="ml-2 h-4 w-4" />
+        </NeuroButton>
+      ),
+      cell: ({ row }) => {
+        const q = row.original
+        return (
+          <div>
+            <p className="font-medium text-white text-sm line-clamp-2" title={q.text}>{q.text}</p>
+            <p className="text-xs text-cyan-300/70 md:hidden">#{q.step.stepNumber} • {q.step.stepName}</p>
+          </div>
+        )
+      }
+    },
+    {
+      accessorKey: 'step',
+      header: 'Step',
+      cell: ({ row }) => {
+        const s = row.original.step
+        return (
+          <div className="text-sm text-cyan-300 hidden sm:block">
+            <div className="font-medium">#{s.stepNumber}</div>
+            <div className="text-xs text-cyan-300/70 max-w-[120px] truncate">{s.stepName}</div>
+          </div>
+        )
+      }
+    },
+    {
+      accessorKey: 'category',
+      header: 'Category',
+      cell: ({ row }) => (
+        <Badge className={`${getCategoryColor(row.original.category)} text-xs font-medium capitalize`}>{row.original.category}</Badge>
+      )
+    },
+    {
+      accessorKey: 'type',
+      header: 'Type',
+      cell: ({ row }) => (
+        <Badge className={`${getTypeColor(row.original.type)} text-xs font-medium capitalize`}>{row.original.type.replace('-', ' ')}</Badge>
+      )
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => (
+        <Badge className={`${getStatusColor(row.original.status)} text-xs font-medium capitalize`}>{row.original.status}</Badge>
+      )
+    },
+    {
+      accessorKey: 'options',
+      header: 'Options',
+      cell: ({ row }) => {
+        const q = row.original
+        if (q.type === 'multiple-choice') {
+          return <span className="text-xs text-cyan-300">{q.options?.length || 0} options</span>
+        }
+        if (q.type === 'text') return <span className="text-xs text-cyan-300">Text</span>
+        if (q.type === 'yes/no') return <span className="text-xs text-cyan-300">Yes/No</span>
+        if (q.type === 'upload') return <span className="text-xs text-cyan-300">Upload</span>
+        if (q.type === 'link') return <span className="text-xs text-cyan-300">Link</span>
+        return <span className="text-xs text-cyan-300">—</span>
+      }
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => {
+        const question = row.original
+        return (
+          <div className="flex items-center gap-1 sm:gap-2">
+            <NeuroButton variant="ghost" size="sm" title="View" onClick={() => { setSelectedQuestion(question); setIsViewOpen(true) }} className="text-cyan-100 hover:bg-cyan-400/10 p-1 sm:p-2">
+              <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+            </NeuroButton>
+            <NeuroButton variant="ghost" size="sm" title="Edit" onClick={() => openEdit(question)} className="text-cyan-100 hover:bg-cyan-400/10 p-1 sm:p-2">
+              <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
+            </NeuroButton>
+            <NeuroButton variant="ghost" size="sm" title="Delete" onClick={() => openDelete(question)} className="text-red-300 hover:bg-red-500/10 p-1 sm:p-2">
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            </NeuroButton>
+          </div>
+        )
+      }
+    }
+  ]
+
+  const filterComponent = (
+    <div className="flex gap-2 flex-wrap">
+      <select
+        value={selectedCategory}
+        onChange={(e) => { setSelectedCategory(e.target.value); setPagination(p=>({...p,pageIndex:0})) }}
+        className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white min-w-[120px]"
+      >
+        <option value="all">All Categories</option>
+        {isCategoriesLoading ? (
+          <option disabled>Loading...</option>
+        ) : (
+          categories.map((category) => (
+            <option key={category._id} value={category.slug}>{category.name}</option>
+          ))
+        )}
+      </select>
+      <select
+        value={selectedType}
+        onChange={(e) => { setSelectedType(e.target.value); setPagination(p=>({...p,pageIndex:0})) }}
+        className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white min-w-[140px]"
+      >
+        <option value="all">All Types</option>
+        <option value="text">Text</option>
+        <option value="yes/no">Yes/No</option>
+        <option value="multiple-choice">Multiple Choice</option>
+        <option value="upload">Upload</option>
+        <option value="link">Link</option>
+      </select>
+    </div>
+  )
+
+  const toolbar = (
+    <div className="flex items-center gap-2 flex-wrap">
+      <NeuroButton onClick={() => setIsAddOpen(true)} className="flex items-center gap-2 bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30 text-sm">
+        <Plus className="h-4 w-4" />
+        Add Question
+      </NeuroButton>
+    </div>
+  )
 
   // Form submission handlers
   const handleAddSingleQuestion = async () => {
@@ -218,16 +386,12 @@ export default function QuestionsManagement() {
         return
       }
 
-      const result = await addQuestion(singleQuestionForm, token)
-      
-      toast({ 
-        title: "Question added successfully", 
-        description: result.message,
-        duration: 3000
-      })
+      const result: AddQuestionResponse = await addQuestion(singleQuestionForm, token)
+      toast({ title: "Question added successfully", description: result.message, duration: 3000 })
+      // Optimistically add instead of full reload
+      setQuestions(prev => [result.data, ...prev])
       setIsAddOpen(false)
       resetSingleQuestionForm()
-      loadQuestions() // Reload questions
     } catch (error) {
       console.error('Error adding question:', error)
       toast({ 
@@ -244,6 +408,11 @@ export default function QuestionsManagement() {
     setEditForm({
       text: q.text,
       status: q.status,
+      type: q.type,
+      category: q.category,
+      optional: q.optional,
+      documents: q.documents,
+      step: { stepNumber: q.step.stepNumber, stepName: q.step.stepName },
       options: q.type === 'multiple-choice' ? q.options : undefined,
       optionsText: q.type === 'multiple-choice' ? q.options.join('\n') : undefined
     })
@@ -271,11 +440,16 @@ export default function QuestionsManagement() {
         toast({ title: 'Auth required', description: 'Please login again.' })
         return
       }
-      const payload: UpdateQuestionRequest = {}
-      if (editForm.text !== undefined) payload.text = editForm.text.trim()
-      if (editForm.options) payload.options = editForm.options
-      if (editForm.status) payload.status = editForm.status
-      const res = await updateQuestion(selectedQuestion._id, payload, token)
+  const payload: UpdateQuestionRequest = {}
+  if (editForm.text !== undefined) payload.text = editForm.text.trim()
+  if (editForm.status) payload.status = editForm.status
+  if (editForm.category) payload.category = editForm.category
+  if (editForm.optional !== undefined) payload.optional = editForm.optional
+  if (editForm.type) payload.type = editForm.type
+  if (editForm.step) payload.step = editForm.step
+  if (editForm.options) payload.options = editForm.options
+  if (editForm.documents) payload.documents = editForm.documents
+  const res = await updateQuestion(selectedQuestion._id, payload, token)
       setQuestions(prev => prev.map(q => q._id === res.data._id ? res.data : q))
       toast({ title: 'Updated', description: res.message })
       setIsEditOpen(false)
@@ -336,167 +510,33 @@ export default function QuestionsManagement() {
               <h1 className="text-xl sm:text-2xl font-bold text-white">Questions</h1>
               <p className="text-cyan-300 text-sm mt-1">Manage questionnaire questions for students and professionals.</p>
             </div>
-            <div className="flex items-center gap-2">
-              <NeuroButton onClick={() => setIsAddOpen(true)} className="flex items-center gap-2 bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30 text-sm">
-                <Plus className="h-4 w-4" />
-                Add Question
-              </NeuroButton>
-            </div>
           </div>
-
-          {/* Filters and Search */}
+          {/* DataTable Card */}
           <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20 mb-4 lg:mb-6">
-            <GlassCardContent className="p-4 sm:p-6">
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-cyan-300" />
-                    <Input
-                      placeholder="Search questions..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 focus:border-cyan-400/60 text-white placeholder-cyan-300/50 text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white min-w-[120px]"
-                  >
-                    <option value="all">All Categories</option>
-                    {isCategoriesLoading ? (
-                      <option disabled>Loading...</option>
-                    ) : (
-                      categories.map((category) => (
-                        <option key={category._id} value={category.slug}>
-                          {category.name}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  <select
-                    value={selectedType}
-                    onChange={(e) => setSelectedType(e.target.value)}
-                    className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white min-w-[140px]"
-                  >
-                    <option value="all">All Types</option>
-                    <option value="text">Text</option>
-                    <option value="yes/no">Yes/No</option>
-                    <option value="multiple-choice">Multiple Choice</option>
-                    <option value="upload">Upload</option>
-                    <option value="link">Link</option>
-                  </select>
-                  <NeuroButton variant="outline" size="sm" className="border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/10">
-                    <Filter className="h-4 w-4" />
-                  </NeuroButton>
-                </div>
-              </div>
-            </GlassCardContent>
-          </GlassCard>
-
-          {/* Questions Table */}
-          <GlassCard className="bg-[#0e2439]/80 backdrop-blur-xl border border-cyan-400/20">
             <GlassCardHeader className="p-4 sm:p-6 pb-0">
               <div className="flex items-center gap-3">
-                <GlassCardTitle className="text-white text-lg sm:text-xl">Questions ({filteredQuestions.length})</GlassCardTitle>
+                <GlassCardTitle className="text-white text-lg sm:text-xl">Questions ({pagination.total})</GlassCardTitle>
                 {isFetching && <LoadingSpinner size="sm" />}
               </div>
             </GlassCardHeader>
             <GlassCardContent className="p-4 sm:p-6">
-              <div className="overflow-x-auto -mx-2 sm:mx-0">
-                <table className="w-full min-w-[800px] sm:min-w-0">
-                  <thead>
-                    <tr className="border-b border-cyan-400/20">
-                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Question</th>
-                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Step</th>
-                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Category</th>
-                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Type</th>
-                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Status</th>
-                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm hidden md:table-cell">Options</th>
-                      <th className="text-left py-3 px-2 sm:px-4 font-medium text-white text-sm">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isLoading ? (
-                      <tr>
-                        <td colSpan={7} className="py-8 text-center text-cyan-300">
-                          <LoadingSpinner text="Loading questions..." />
-                        </td>
-                      </tr>
-                    ) : filteredQuestions.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="py-8 text-center text-cyan-300">No questions found</td>
-                      </tr>
-                    ) : (
-                      filteredQuestions.map((question) => (
-                        <tr key={question._id} className="border-b border-cyan-400/10 hover:bg-cyan-400/5 transition-all duration-300">
-                          <td className="py-4 px-2 sm:px-4">
-                            <div>
-                              <p className="font-medium text-white text-sm">{question.text}</p>
-                              <div className="md:hidden mt-1">
-                                <p className="text-xs text-cyan-300/70">
-                                  {question.options && question.options.length > 0 
-                                    ? `${question.options.length} options` 
-                                    : question.type === "text" ? "Text response" : 
-                                      question.type === "yes/no" ? "Yes/No" :
-                                      question.type === "upload" ? "File upload" :
-                                      question.type === "link" ? "Link" : "Multiple choice"
-                                  }
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-4 px-2 sm:px-4">
-                            <div className="text-sm text-cyan-300">
-                              <div className="font-medium">#{question.step.stepNumber}</div>
-                              <div className="text-xs text-cyan-300/70">{question.step.stepName}</div>
-                            </div>
-                          </td>
-                          <td className="py-4 px-2 sm:px-4">
-                            <Badge className={`${getCategoryColor(question.category)} text-xs font-medium capitalize`}>
-                              {question.category}
-                            </Badge>
-                          </td>
-                          <td className="py-4 px-2 sm:px-4">
-                            <Badge className={`${getTypeColor(question.type)} text-xs font-medium`}>
-                              {question.type.replace('-', ' ')}
-                            </Badge>
-                          </td>
-                          <td className="py-4 px-2 sm:px-4">
-                            <Badge className={`${getStatusColor(question.status)} text-xs font-medium capitalize`}>
-                              {question.status}
-                            </Badge>
-                          </td>
-                          <td className="py-4 px-2 sm:px-4 text-sm text-cyan-300 hidden md:table-cell">
-                            {question.options && question.options.length > 0 
-                              ? `${question.options.length} options` 
-                              : question.type === "text" ? "Text response" : 
-                                question.type === "yes/no" ? "Yes/No" :
-                                question.type === "upload" ? "File upload" :
-                                question.type === "link" ? "Link" : "Multiple choice"
-                            }
-                          </td>
-                          <td className="py-4 px-2 sm:px-4">
-                            <div className="flex items-center gap-1 sm:gap-2">
-                              <NeuroButton variant="ghost" size="sm" title="View" onClick={() => { setSelectedQuestion(question); setIsViewOpen(true) }} className="text-cyan-100 hover:bg-cyan-400/10 p-1 sm:p-2">
-                                <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-                              </NeuroButton>
-                              <NeuroButton variant="ghost" size="sm" title="Edit" onClick={() => openEdit(question)} className="text-cyan-100 hover:bg-cyan-400/10 p-1 sm:p-2">
-                                <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
-                              </NeuroButton>
-                              <NeuroButton variant="ghost" size="sm" title="Delete" onClick={() => openDelete(question)} className="text-red-300 hover:bg-red-500/10 p-1 sm:p-2">
-                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                              </NeuroButton>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                columns={columns}
+                data={pagedQuestions}
+                searchPlaceholder="Search questions..."
+                isLoading={isLoading || isFetching}
+                filterComponent={filterComponent}
+                toolbar={toolbar}
+                onSearchChange={handleSearchChange}
+                pagination={{
+                  pageIndex: pagination.pageIndex,
+                  pageSize: pagination.pageSize,
+                  pageCount: pagination.pageCount,
+                  total: pagination.total,
+                  onPageChange: (pageIndex) => setPagination(prev => ({ ...prev, pageIndex })),
+                  onPageSizeChange: (pageSize) => setPagination(prev => ({ ...prev, pageSize, pageIndex: 0 }))
+                }}
+              />
             </GlassCardContent>
           </GlassCard>
 
@@ -804,10 +844,101 @@ export default function QuestionsManagement() {
                   </div>
                   <div>
                     <label className="block text-white/70 mb-1">Type</label>
-                    <Input disabled value={selectedQuestion.type} className="bg-[#0e2439]/50 border-cyan-400/30 text-white text-sm" />
+                    <select
+                      value={editForm.type || selectedQuestion.type}
+                      onChange={(e) => setEditForm(f => ({ ...f, type: e.target.value as QuestionType, options: e.target.value === 'multiple-choice' ? (f.options || []) : undefined, optionsText: e.target.value === 'multiple-choice' ? (f.optionsText || '') : undefined }))}
+                      className="w-full px-3 py-2 bg-[#0e2439]/50 border border-cyan-400/30 rounded-md text-white"
+                    >
+                      <option value="text">Text</option>
+                      <option value="yes/no">Yes/No</option>
+                      <option value="multiple-choice">Multiple Choice</option>
+                      <option value="upload">Upload</option>
+                      <option value="link">Link</option>
+                    </select>
                   </div>
                 </div>
-                {selectedQuestion.type === 'multiple-choice' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-white/70 mb-1">Category</label>
+                    <select
+                      value={editForm.category || selectedQuestion.category}
+                      onChange={(e) => setEditForm(f => ({ ...f, category: e.target.value }))}
+                      className="w-full px-3 py-2 bg-[#0e2439]/50 border border-cyan-400/30 rounded-md text-white"
+                    >
+                      {categories.map(c => <option key={c._id} value={c.slug}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex items-center space-x-2 mt-6">
+                    <Checkbox
+                      id="edit-optional"
+                      checked={!!editForm.optional}
+                      onCheckedChange={(checked) => setEditForm(f => ({ ...f, optional: !!checked }))}
+                      className="border-cyan-400/30 data-[state=checked]:bg-cyan-400"
+                    />
+                    <Label htmlFor="edit-optional" className="text-sm text-white/80">Optional</Label>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-white/70 mb-1">Step Name</label>
+                    <select
+                      value={editForm.step?.stepName || selectedQuestion.step.stepName}
+                      onChange={(e) => {
+                        const stepName = e.target.value
+                        const stepNumberMap: Record<string, number> = {
+                          "Academic Background": 1,
+                          "Career Aspirations": 2,
+                          "Skills & Strengths": 3,
+                          "Learning & Development Preferences": 4,
+                          "Timeline & Goals": 5,
+                          "Work Preferences": 6,
+                          "Career Motivation": 7,
+                          "Career Challenges & Barriers": 8,
+                          "Networking & Professional Exposure": 9,
+                          "Professional Profiles & Documents": 10
+                        }
+                        setEditForm(f => ({ ...f, step: { stepName, stepNumber: stepNumberMap[stepName] || 1 } }))
+                      }}
+                      className="w-full px-3 py-2 bg-[#0e2439]/50 border border-cyan-400/30 rounded-md text-white"
+                    >
+                      <option value="Academic Background">Academic Background</option>
+                      <option value="Career Aspirations">Career Aspirations</option>
+                      <option value="Skills & Strengths">Skills & Strengths</option>
+                      <option value="Learning & Development Preferences">Learning & Development Preferences</option>
+                      <option value="Timeline & Goals">Timeline & Goals</option>
+                      <option value="Work Preferences">Work Preferences</option>
+                      <option value="Career Motivation">Career Motivation</option>
+                      <option value="Career Challenges & Barriers">Career Challenges & Barriers</option>
+                      <option value="Networking & Professional Exposure">Networking & Professional Exposure</option>
+                      <option value="Professional Profiles & Documents">Professional Profiles & Documents</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-white/70 mb-1">Step Number</label>
+                    <Input
+                      type="number"
+                      value={editForm.step?.stepNumber || selectedQuestion.step.stepNumber}
+                      onChange={(e) => setEditForm(f => ({ ...f, step: { stepName: f.step?.stepName || selectedQuestion.step.stepName, stepNumber: parseInt(e.target.value) || 1 } }))}
+                      className="bg-[#0e2439]/50 border-cyan-400/30 text-white text-sm"
+                      min={1}
+                      max={10}
+                    />
+                  </div>
+                </div>
+                { (editForm.type || selectedQuestion.type) === 'upload' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="edit-cv-required"
+                        checked={!!editForm.documents?.cv}
+                        onCheckedChange={(checked) => setEditForm(f => ({ ...f, documents: { cv: !!checked, optionalDocs: f.documents?.optionalDocs || [] } }))}
+                        className="border-cyan-400/30 data-[state=checked]:bg-cyan-400"
+                      />
+                      <Label htmlFor="edit-cv-required" className="text-sm text-white/80">CV Required</Label>
+                    </div>
+                  </div>
+                ) }
+                {(editForm.type || selectedQuestion.type) === 'multiple-choice' && (
                   <div>
                     <label className="block text-white/70 mb-1">Options (one per line)</label>
                     <Textarea

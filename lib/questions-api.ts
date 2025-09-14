@@ -77,12 +77,27 @@ export interface AddQuestionRequest {
   };
 }
 
-export interface AddQuestionsResponse {
+export interface AddQuestionResponse {
   message: string;
-  data: Question[];
+  data: Question;
 }
 
-export async function addQuestion(question: AddQuestionRequest, token: string): Promise<AddQuestionsResponse> {
+function buildAddPayload(question: AddQuestionRequest) {
+  const { options, documents, ...rest } = question
+  const payload: any = { ...rest }
+  if (question.type === 'multiple-choice' && options && options.length) {
+    payload.options = options
+  }
+  if (question.type === 'upload' && documents) {
+    payload.documents = documents
+  } else if (documents && question.type !== 'upload') {
+    // If documents provided for non-upload types, still include if backend expects it
+    payload.documents = documents
+  }
+  return payload
+}
+
+export async function addQuestion(question: AddQuestionRequest, token: string): Promise<AddQuestionResponse> {
   try {
     const response = await fetch(getApiUrl('/questions/add'), {
       method: 'POST',
@@ -90,7 +105,7 @@ export async function addQuestion(question: AddQuestionRequest, token: string): 
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify([question]), // Wrap single question in array as per API
+      body: JSON.stringify(buildAddPayload(question)),
     });
 
     if (!response.ok) {
@@ -98,15 +113,24 @@ export async function addQuestion(question: AddQuestionRequest, token: string): 
       throw new Error(errorData.message || `Failed to add question: ${response.status} ${response.statusText}`);
     }
 
-    const data: AddQuestionsResponse = await response.json();
-    return data;
+    const data = await response.json();
+    // Support both legacy array response and new single object
+    if (Array.isArray(data.data)) {
+      return { message: data.message || 'Question added', data: data.data[0] };
+    }
+    return { message: data.message || 'Question added', data: data.data };
   } catch (error) {
     console.error('Error adding question:', error);
     throw error;
   }
 }
 
-export async function addMultipleQuestions(questions: AddQuestionRequest[], token: string): Promise<AddQuestionsResponse> {
+export interface AddQuestionsBulkResponse {
+  message: string;
+  data: Question[];
+}
+
+export async function addMultipleQuestions(questions: AddQuestionRequest[], token: string): Promise<AddQuestionsBulkResponse> {
   try {
     const response = await fetch(getApiUrl('/questions/add'), {
       method: 'POST',
@@ -122,8 +146,9 @@ export async function addMultipleQuestions(questions: AddQuestionRequest[], toke
       throw new Error(errorData.message || `Failed to add questions: ${response.status} ${response.statusText}`);
     }
 
-    const data: AddQuestionsResponse = await response.json();
-    return data;
+  const data = await response.json();
+  // Expect array for bulk; normalize shape
+  return { message: data.message || 'Questions added', data: Array.isArray(data.data) ? data.data : [data.data] };
   } catch (error) {
     console.error('Error adding questions:', error);
     throw error;
@@ -133,8 +158,19 @@ export async function addMultipleQuestions(questions: AddQuestionRequest[], toke
 // --- Update & Delete (Soft) ---
 export interface UpdateQuestionRequest {
   text?: string;
+  type?: 'text' | 'yes/no' | 'multiple-choice' | 'upload' | 'link';
   options?: string[]; // Only for multiple-choice
+  step?: {
+    stepNumber: number;
+    stepName: string;
+  };
+  category?: string;
+  optional?: boolean;
   status?: 'active' | 'inactive';
+  documents?: {
+    cv: boolean;
+    optionalDocs: Array<{ type: string; required: boolean; }>
+  }
 }
 
 export interface UpdateQuestionResponse {

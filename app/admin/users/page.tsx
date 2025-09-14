@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal, Plus, Eye, Edit, Trash2, ArrowUpDown } from "lucide-react"
 
@@ -34,6 +34,7 @@ export default function UsersManagement() {
   const { toast } = useToast()
 
   const [searchTerm, setSearchTerm] = useState("")
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null)
   const [selectedRole, setSelectedRole] = useState<string>("all")
 
   const [users, setUsers] = useState<AdminUser[]>([])
@@ -43,7 +44,7 @@ export default function UsersManagement() {
   // Pagination state
   const [pagination, setPagination] = useState({
     pageIndex: 0,
-    pageSize: 20,
+    pageSize: 10,
     pageCount: 1,
     total: 0,
   })
@@ -76,6 +77,7 @@ export default function UsersManagement() {
 
   const loadUsers = async () => {
     try {
+      if (isFetching) return
       setIsFetching(true)
       const params = new URLSearchParams()
       params.append('page', String(pagination.pageIndex + 1))
@@ -115,9 +117,14 @@ export default function UsersManagement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.pageIndex, pagination.pageSize])
 
-  const handleSearch = () => {
+  // Debounced search input -> server fetch
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
     setPagination(prev => ({ ...prev, pageIndex: 0 }))
-    setTimeout(() => loadUsers(), 0)
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    searchDebounceRef.current = setTimeout(() => {
+      loadUsers()
+    }, 400)
   }
 
   const filteredUsers = useMemo(() => users, [users])
@@ -312,7 +319,12 @@ export default function UsersManagement() {
   const filterComponent = (
     <select
       value={selectedRole}
-      onChange={(e) => { setSelectedRole(e.target.value); setPagination(prev => ({ ...prev, pageIndex: 0 })); setTimeout(() => loadUsers(), 0) }}
+      onChange={(e) => {
+        setSelectedRole(e.target.value)
+        setPagination(prev => ({ ...prev, pageIndex: 0 }))
+        // immediate fetch for role change
+        setTimeout(() => loadUsers(), 0)
+      }}
       className="px-3 py-2 bg-[#0e2439]/50 backdrop-blur-sm border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white min-w-[120px]"
     >
       <option value="all">All Roles</option>
@@ -356,17 +368,24 @@ export default function UsersManagement() {
                 columns={columns}
                 data={filteredUsers}
                 searchPlaceholder="Search users by name or email..."
-                isLoading={isLoading}
+                isLoading={isLoading || isFetching}
                 onRefresh={loadUsers}
                 filterComponent={filterComponent}
                 toolbar={toolbar}
+                onSearchChange={handleSearchChange}
                 pagination={{
                   pageIndex: pagination.pageIndex,
                   pageSize: pagination.pageSize,
                   pageCount: pagination.pageCount,
                   total: pagination.total,
-                  onPageChange: (pageIndex) => setPagination(prev => ({ ...prev, pageIndex })),
-                  onPageSizeChange: (pageSize) => setPagination(prev => ({ ...prev, pageSize, pageIndex: 0 })),
+                  onPageChange: (pageIndex) => {
+                    setPagination(prev => ({ ...prev, pageIndex }))
+                    setTimeout(() => loadUsers(), 0)
+                  },
+                  onPageSizeChange: (pageSize) => {
+                    setPagination(prev => ({ ...prev, pageSize, pageIndex: 0 }))
+                    setTimeout(() => loadUsers(), 0)
+                  },
                 }}
               />
             </GlassCardContent>
