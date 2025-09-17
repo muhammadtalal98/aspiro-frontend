@@ -206,7 +206,7 @@ export async function updateQuestion(id: string, updates: UpdateQuestionRequest,
 export interface DeleteQuestionResponse {
   success: boolean;
   message: string;
-  data: { id: string; status: 'inactive' };
+  data: { id: string };
 }
 
 export async function deleteQuestion(id: string, token: string): Promise<DeleteQuestionResponse> {

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from "@/components/ui/glass-card"
 import { NeuroButton } from "@/components/ui/neuro-button"
-import { Input } from "@/components/ui/input"
+// Step inputs hidden; Input not needed here
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
@@ -245,24 +245,12 @@ export default function QuestionsManagement() {
         return (
           <div>
             <p className="font-medium text-white text-sm line-clamp-2" title={q.text}>{q.text}</p>
-            <p className="text-xs text-cyan-300/70 md:hidden">#{q.step.stepNumber} • {q.step.stepName}</p>
+            {/* Step info hidden from UI */}
           </div>
         )
       }
     },
-    {
-      accessorKey: 'step',
-      header: 'Step',
-      cell: ({ row }) => {
-        const s = row.original.step
-        return (
-          <div className="text-sm text-cyan-300 hidden sm:block">
-            <div className="font-medium">#{s.stepNumber}</div>
-            <div className="text-xs text-cyan-300/70 max-w-[120px] truncate">{s.stepName}</div>
-          </div>
-        )
-      }
-    },
+    // Step column removed from UI
     {
       accessorKey: 'category',
       header: 'Category',
@@ -368,10 +356,7 @@ export default function QuestionsManagement() {
       return
     }
 
-    if (!singleQuestionForm.step.stepName.trim()) {
-      toast({ title: "Step name is required", description: "Please enter a step name." })
-      return
-    }
+    // Step is static; no UI validation required
 
     if (singleQuestionForm.type === "multiple-choice" && (!singleQuestionForm.options || singleQuestionForm.options.length === 0)) {
       toast({ title: "Options are required", description: "Please provide options for multiple-choice questions." })
@@ -425,7 +410,7 @@ export default function QuestionsManagement() {
       toast({ title: 'Text required', description: 'Question text cannot be empty.' })
       return
     }
-    if (editForm.optionsText !== undefined) {
+  if (editForm.optionsText !== undefined) {
       const opts = editForm.optionsText.split('\n').map(o => o.trim()).filter(Boolean)
       if (opts.length === 0) {
         toast({ title: 'Options required', description: 'Provide at least one option.' })
@@ -446,7 +431,7 @@ export default function QuestionsManagement() {
   if (editForm.category) payload.category = editForm.category
   if (editForm.optional !== undefined) payload.optional = editForm.optional
   if (editForm.type) payload.type = editForm.type
-  if (editForm.step) payload.step = editForm.step
+  // keep existing step as-is; do not modify from UI
   if (editForm.options) payload.options = editForm.options
   if (editForm.documents) payload.documents = editForm.documents
   const res = await updateQuestion(selectedQuestion._id, payload, token)
@@ -467,8 +452,8 @@ export default function QuestionsManagement() {
       setIsMutating(true)
       const token = getToken()
       if (!token) { toast({ title: 'Auth required', description: 'Please login.' }); return }
-      const res = await deleteQuestion(selectedQuestion._id, token)
-      setQuestions(prev => prev.map(q => q._id === res.data.id ? { ...q, status: 'inactive' } : q))
+  const res = await deleteQuestion(selectedQuestion._id, token)
+  setQuestions(prev => prev.filter(q => q._id !== res.data.id))
       toast({ title: 'Deleted', description: res.message })
       setIsDeleteOpen(false)
     } catch (e) {
@@ -606,62 +591,7 @@ export default function QuestionsManagement() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-white/80 block mb-1">Step Number *</label>
-                  <Input
-                    type="number"
-                    value={singleQuestionForm.step.stepNumber}
-                    onChange={(e) => setSingleQuestionForm({ 
-                      ...singleQuestionForm, 
-                      step: { ...singleQuestionForm.step, stepNumber: parseInt(e.target.value) || 1 }
-                    })}
-                    className="bg-[#0e2439]/50 border-cyan-400/30 text-white text-sm"
-                    min="1"
-                    max="10"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-white/80 block mb-1">Step Name *</label>
-                  <select 
-                    value={singleQuestionForm.step.stepName} 
-                    onChange={(e) => {
-                      const stepName = e.target.value
-                      const stepNumberMap: Record<string, number> = {
-                        "Academic Background": 1,
-                        "Career Aspirations": 2,
-                        "Skills & Strengths": 3,
-                        "Learning & Development Preferences": 4,
-                        "Timeline & Goals": 5,
-                        "Work Preferences": 6,
-                        "Career Motivation": 7,
-                        "Career Challenges & Barriers": 8,
-                        "Networking & Professional Exposure": 9,
-                        "Professional Profiles & Documents": 10
-                      }
-                      setSingleQuestionForm({ 
-                        ...singleQuestionForm, 
-                        step: { 
-                          stepNumber: stepNumberMap[stepName] || singleQuestionForm.step.stepNumber,
-                          stepName: stepName 
-                        }
-                      })
-                    }} 
-                    className="w-full px-3 py-2 bg-[#0e2439]/50 border border-cyan-400/30 rounded-md text-sm focus:border-cyan-400/60 focus:outline-none text-white"
-                  >
-                    <option value="Academic Background">Academic Background</option>
-                    <option value="Career Aspirations">Career Aspirations</option>
-                    <option value="Skills & Strengths">Skills & Strengths</option>
-                    <option value="Learning & Development Preferences">Learning & Development Preferences</option>
-                    <option value="Timeline & Goals">Timeline & Goals</option>
-                    <option value="Work Preferences">Work Preferences</option>
-                    <option value="Career Motivation">Career Motivation</option>
-                    <option value="Career Challenges & Barriers">Career Challenges & Barriers</option>
-                    <option value="Networking & Professional Exposure">Networking & Professional Exposure</option>
-                    <option value="Professional Profiles & Documents">Professional Profiles & Documents</option>
-                  </select>
-                </div>
-              </div>
+              {/* Step inputs hidden; static step kept in payload */}
               
               {singleQuestionForm.type === "multiple-choice" && (
                 <div>
@@ -726,7 +656,7 @@ export default function QuestionsManagement() {
             
             <DialogFooter className="mt-6 flex-col sm:flex-row gap-2">
               <NeuroButton variant="outline" onClick={() => setIsAddOpen(false)} className="border-cyan-400/30 text-cyan-100 w-full sm:w-auto text-sm">Cancel</NeuroButton>
-              <NeuroButton onClick={handleAddSingleQuestion} disabled={isSaving || !singleQuestionForm.text.trim() || !singleQuestionForm.step.stepName.trim()} className="bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30 w-full sm:w-auto text-sm">
+              <NeuroButton onClick={handleAddSingleQuestion} disabled={isSaving || !singleQuestionForm.text.trim()} className="bg-cyan-400/20 border border-cyan-400/30 text-cyan-100 hover:bg-cyan-400/30 w-full sm:w-auto text-sm">
                 {isSaving ? "Adding..." : "Add Question"}
               </NeuroButton>
             </DialogFooter>
@@ -745,10 +675,7 @@ export default function QuestionsManagement() {
                   <span className="text-white/70 min-w-0 mr-4">Question</span>
                   <span className="text-right break-words">{selectedQuestion.text}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-white/70">Step</span>
-                  <span>#{selectedQuestion.step.stepNumber} - {selectedQuestion.step.stepName}</span>
-                </div>
+                {/* Step details hidden from UI */}
                 <div className="flex justify-between">
                   <span className="text-white/70">Category</span>
                   <span className="capitalize">{selectedQuestion.category}</span>
@@ -878,53 +805,7 @@ export default function QuestionsManagement() {
                     <Label htmlFor="edit-optional" className="text-sm text-white/80">Optional</Label>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-white/70 mb-1">Step Name</label>
-                    <select
-                      value={editForm.step?.stepName || selectedQuestion.step.stepName}
-                      onChange={(e) => {
-                        const stepName = e.target.value
-                        const stepNumberMap: Record<string, number> = {
-                          "Academic Background": 1,
-                          "Career Aspirations": 2,
-                          "Skills & Strengths": 3,
-                          "Learning & Development Preferences": 4,
-                          "Timeline & Goals": 5,
-                          "Work Preferences": 6,
-                          "Career Motivation": 7,
-                          "Career Challenges & Barriers": 8,
-                          "Networking & Professional Exposure": 9,
-                          "Professional Profiles & Documents": 10
-                        }
-                        setEditForm(f => ({ ...f, step: { stepName, stepNumber: stepNumberMap[stepName] || 1 } }))
-                      }}
-                      className="w-full px-3 py-2 bg-[#0e2439]/50 border border-cyan-400/30 rounded-md text-white"
-                    >
-                      <option value="Academic Background">Academic Background</option>
-                      <option value="Career Aspirations">Career Aspirations</option>
-                      <option value="Skills & Strengths">Skills & Strengths</option>
-                      <option value="Learning & Development Preferences">Learning & Development Preferences</option>
-                      <option value="Timeline & Goals">Timeline & Goals</option>
-                      <option value="Work Preferences">Work Preferences</option>
-                      <option value="Career Motivation">Career Motivation</option>
-                      <option value="Career Challenges & Barriers">Career Challenges & Barriers</option>
-                      <option value="Networking & Professional Exposure">Networking & Professional Exposure</option>
-                      <option value="Professional Profiles & Documents">Professional Profiles & Documents</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-white/70 mb-1">Step Number</label>
-                    <Input
-                      type="number"
-                      value={editForm.step?.stepNumber || selectedQuestion.step.stepNumber}
-                      onChange={(e) => setEditForm(f => ({ ...f, step: { stepName: f.step?.stepName || selectedQuestion.step.stepName, stepNumber: parseInt(e.target.value) || 1 } }))}
-                      className="bg-[#0e2439]/50 border-cyan-400/30 text-white text-sm"
-                      min={1}
-                      max={10}
-                    />
-                  </div>
-                </div>
+                {/* Step edit inputs removed */}
                 { (editForm.type || selectedQuestion.type) === 'upload' && (
                   <div className="space-y-3">
                     <div className="flex items-center space-x-2">
