@@ -127,7 +127,10 @@ export default function RoadmapsSelectionPage() {
                     >
                       <div className="flex flex-col gap-1 w-full">
                         <span className="text-sm font-semibold truncate text-white group-data-[state=active]:text-cyan-100">{r.title || 'Roadmap'}</span>
-                        {r.skillFocus && <span className="text-[11px] text-cyan-300/70 truncate">{r.skillFocus}</span>}
+                        <div className="flex flex-col gap-0.5">
+                          {r.skillFocus && <span className="text-[11px] text-cyan-300/70 truncate">{r.skillFocus}</span>}
+                          {r.experienceDuration && <span className="text-[10px] text-cyan-400/80 truncate font-medium">{r.experienceDuration}</span>}
+                        </div>
                       </div>
                       <div className="absolute inset-0 rounded-2xl opacity-0 group-data-[state=active]:opacity-100 ring-2 ring-cyan-400/60 pointer-events-none" />
                     </TabsTrigger>
@@ -139,7 +142,10 @@ export default function RoadmapsSelectionPage() {
                 <TabsContent key={r.id} value={r.id} className="mt-0">
                   {/* Overview / summary panel */}
                   <div className="mb-6 p-5 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-blue-600/5 border border-cyan-400/30 flex flex-col gap-2">
-                    {r.skillFocus && <div className="text-xs uppercase tracking-wide text-cyan-300/80">Focus: <span className="font-semibold text-cyan-200">{r.skillFocus}</span></div>}
+                    <div className="flex flex-wrap items-center gap-4 text-xs uppercase tracking-wide">
+                      {r.skillFocus && <span className="text-cyan-300/80">Focus: <span className="font-semibold text-cyan-200">{r.skillFocus}</span></span>}
+                      {r.experienceDuration && <span className="text-cyan-300/80">Duration: <span className="font-semibold text-cyan-200">{r.experienceDuration}</span></span>}
+                    </div>
                     {r.summary && <p className="text-sm text-cyan-100/80 leading-relaxed max-w-3xl">{r.summary}</p>}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

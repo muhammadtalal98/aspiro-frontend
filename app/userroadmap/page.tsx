@@ -186,7 +186,14 @@ export default function UserRoadmapPage() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-6 w-6 text-cyan-400" />
-                  <h2 className="text-xl lg:text-2xl font-bold text-white">Your Current Roadmap</h2>
+                  <div>
+                    <h2 className="text-xl lg:text-2xl font-bold text-white">Your Current Roadmap</h2>
+                    {selectedSuggestion?.experienceDuration && (
+                      <p className="text-cyan-300/80 text-sm mt-1">
+                        Expected Duration: <span className="font-semibold text-cyan-200">{selectedSuggestion.experienceDuration}</span>
+                      </p>
+                    )}
+                  </div>
                 </div>
                 {selectedSuggestion && (
                   <div className="flex items-center gap-3">
