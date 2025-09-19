@@ -242,14 +242,6 @@ export default function OnboardingPage() {
           setCurrentStep(1);
           setIsAnimating(false);
         }, 150);
-      } else if (currentStep === 1) {
-        // At CV step but questions not appended yet (maybe user clicked Next before upload finished)
-        if (isProcessingCV) return; // Wait until processing completes
-        // If CV not uploaded, block (already invalid). If uploaded & processing done but still no questions, prompt user
-        if (uploadedFiles[step.id]?.length && onboardingSteps.length === 2) {
-          // Force re-process if somehow not triggered
-          await processCVAndPreFill(uploadedFiles[step.id]);
-        }
       }
       return;
     }
@@ -499,10 +491,11 @@ export default function OnboardingPage() {
       ...prev,
       [step.id]: fileArray
     }))
-    // Trigger pre-fill only for the dedicated CV upload step
+    // For the dedicated CV upload step, do NOT auto-process; require explicit button click
     const isCVUpload = step.id === 'upload-cv';
-    if (isCVUpload && fileArray.length > 0) {
-      await processCVAndPreFill(fileArray);
+    if (isCVUpload) {
+      setPreFillData(null);
+      setCvProcessingError(null);
     }
   }
 
@@ -597,9 +590,12 @@ export default function OnboardingPage() {
       // For file uploads, check if files are uploaded
       const files = uploadedFiles[currentStepData.id]
       const hasFiles = files && files.length > 0
-      
 
-      
+      // For the dedicated CV upload step, require processing completion before proceeding
+      if (currentStepData.id === 'upload-cv') {
+        return Boolean(hasFiles && preFillData && !isProcessingCV)
+      }
+
       return hasFiles
     }
     
@@ -991,6 +987,11 @@ export default function OnboardingPage() {
                                     {currentStepData.fileTypes?.join(", ")} files accepted
 
                                   </p>
+                                  {currentStepData.id === 'upload-cv' && (
+                                    <p className="text-xs sm:text-sm lg:text-base text-cyan-300/80 mt-2 sm:mt-3">
+                                      After selecting your CV, click "Process CV" to continue.
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1045,6 +1046,10 @@ export default function OnboardingPage() {
                                           ...prev,
                                           [currentStepData.id]: allFiles
                                         }));
+                                        if (currentStepData.id === 'upload-cv') {
+                                          setPreFillData(null);
+                                          setCvProcessingError(null);
+                                        }
                                       }
                                     };
                                     input.click();
@@ -1056,6 +1061,21 @@ export default function OnboardingPage() {
                                   <p className="text-xs sm:text-sm lg:text-base text-cyan-100">Add more files</p>
                                 </div>
                               </button>
+                              )}
+
+                              {/* Explicit Process CV action for the CV step */}
+                              {currentStepData.id === 'upload-cv' && uploadedFiles[currentStepData.id]?.length > 0 && !isProcessingCV && onboardingSteps.length === 2 && (
+                                <button
+                                  onClick={async () => {
+                                    const filesToProcess = uploadedFiles[currentStepData.id];
+                                    if (filesToProcess && filesToProcess.length > 0) {
+                                      await processCVAndPreFill(filesToProcess);
+                                    }
+                                  }}
+                                  className="w-full p-3 sm:p-4 lg:p-5 rounded-xl bg-gradient-to-r from-purple-500 to-blue-600 text-white font-semibold shadow-lg shadow-purple-500/20 hover:from-purple-400 hover:to-blue-500 transition-all duration-300"
+                                >
+                                  Process CV with AI
+                                </button>
                               )}
                             </div>
                           )}
