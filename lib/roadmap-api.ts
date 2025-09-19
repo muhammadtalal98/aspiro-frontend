@@ -15,6 +15,7 @@ export interface Roadmap {
   title: string;
   summary?: string; // overview / rationale merged
   skillFocus?: string;
+  experienceDuration?: string; // e.g., "2-3 years", "5+ years", "Entry level"
   courses: RoadmapCourse[]; // between 4 and 8
 }
 
@@ -47,6 +48,7 @@ export interface CurrentRoadmapSuggestion {
   overview?: string;
   rationale?: string;
   skillFocus?: string;
+  experienceDuration?: string; // e.g., "2-3 years", "5+ years", "Entry level"
   courses: CurrentRoadmapSuggestionCourseItem[]; // 4-8
 }
 
@@ -231,6 +233,7 @@ export function normalizeStoredRoadmaps(input: any): Roadmap[] {
       title: r.title || r.overview || `Suggested Path ${idx + 1}`,
       summary: r.summary || r.overview || r.rationale || '',
       skillFocus: r.skillFocus,
+      experienceDuration: r.experienceDuration,
       courses
     };
   });
